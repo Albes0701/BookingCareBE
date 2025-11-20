@@ -1,0 +1,376 @@
+services:
+  postgresql:
+    container_name: ms_pg_sql
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: ms_bookingcare_pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  config-server:
+    build:
+      context: ./services/config-server
+    container_name: bookingcare_config-server
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+    ports:
+      - "8888:8888"
+    networks:
+      - microservices-net
+    depends_on:
+      - postgresql
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  discovery-service:
+    build:
+      context: ./services/discovery
+    container_name: bookingcare_discovery-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+    ports:
+      - "8761:8761"
+    networks:
+      - microservices-net
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api-gateway:
+    build:
+      context: ./services/gateway
+    container_name: bookingcare_api-gateway
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+    ports:
+      - "8222:8222"
+    networks:
+      - microservices-net
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      account-service:
+        condition: service_started
+      booking-service:
+        condition: service_started
+      clinic-service:
+        condition: service_started
+      expertise-service:
+        condition: service_started
+      package-service:
+        condition: service_started
+      schedule-service:
+        condition: service_started
+
+  account-service:
+    build:
+      context: ./services/account
+    container_name: bookingcare_account-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/account
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/account
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8070:8070"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  booking-service:
+    build:
+      context: ./services/booking
+      target: development
+    container_name: bookingcare_booking-service
+    volumes:
+      - ./services/booking:/workspace
+      - maven-cache:/root/.m2
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/booking-service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/booking-service
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8071:8071"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./services/booking/src
+          target: /workspace/src
+          ignore:
+            - target/
+        - action: rebuild
+          path: ./services/booking/pom.xml
+    restart: unless-stopped
+
+  clinic-service:
+    build:
+      context: ./services/clinic
+    container_name: bookingcare_clinic-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/clinic
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8072:8072"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  expertise-service:
+    build:
+      context: .
+      dockerfile: ./services/expertise/Dockerfile
+    container_name: bookingcare_expertise-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/expertise
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8073:8073"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./services/notification
+    container_name: bookingcare_notification-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/notification
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8074:8074"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  package-service:
+    build:
+      context: ./services/package-service
+    container_name: bookingcare_package-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/package
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8075:8075"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ./services/payment
+    container_name: bookingcare_payment-service
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/payment
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/payment
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8076:8076"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+    #ngrok: Dịch vụ ngrok để expose API ra ngoài
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    container_name: bookingcare_payment_ngrok-service
+    ports:
+      - "4041:4040" # Ngrok web interface
+    environment:
+      - NGROK_AUTHTOKEN=34ux0ogaDGO5ZSi0jXsF9cyJwOy_393LTMkAS2DBmJSXpAGJ8
+    command:
+      - "http" # Start an HTTP tunnel
+      - "payment-service:8076" # Forward traffic to the API service
+      - "--log=stdout" # Log to stdout for easy access
+    networks:
+      # Phải tham gia network này để thấy các service khác
+      - microservices-net
+    depends_on:
+      # Khởi động sau khi payment-service đã chạy
+      - payment-service
+
+  schedule-service:
+    build:
+      context: ./services/schedule
+      target: development
+    container_name: bookingcare_schedule-service
+    volumes:
+      - ./services/schedule:/workspace
+      - maven-cache:/root/.m2
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/schedule-service
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgresql:5432/schedule-service
+      SPRING_FLYWAY_USER: postgres
+      SPRING_FLYWAY_PASSWORD: admin
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+    ports:
+      - "8077:8077"
+    networks:
+      - microservices-net
+    depends_on:
+      postgresql:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./services/schedule/src
+          target: /workspace/src
+          ignore:
+            - target/
+        - action: rebuild
+          path: ./services/schedule/pom.xml
+    restart: unless-stopped
+
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:
+  maven-cache:

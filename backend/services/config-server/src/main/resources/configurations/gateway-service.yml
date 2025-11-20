@@ -1,0 +1,57 @@
+server:
+  port: 8222
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: account-service
+          uri: lb://ACCOUNT-SERVICE
+          predicates:
+            - Path=/api/v1/account/**
+        - id: booking-service
+          uri: lb://BOOKING-SERVICE
+          predicates:
+            - Path=/api/v1/booking/**
+        - id: clinic-service
+          uri: lb://CLINIC-SERVICE
+          predicates:
+            - Path=/api/v1/clinics/**
+          # Nếu backend KHÔNG có tiền tố /api/v1/clinics, thêm 1 trong 2 dòng dưới:
+          # filters:
+          #   - RewritePath=/api/v1/clinics/(?<segment>.*), /${segment}
+          #   - StripPrefix=2
+        - id: expertise-service
+          uri: lb://EXPERTISE-SERVICE
+          predicates:
+            - Path=/api/v1/expertise/**
+        - id: notification-service
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/v1/notification/**
+        - id: package-service
+          uri: lb://PACKAGE-SERVICE
+          predicates:
+            - Path=/api/v1/packages-services/**
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/v1/payments/**
+        - id: schedule-service
+          uri: lb://SCHEDULE-SERVICE
+          predicates:
+            - Path=/api/v1/schedule/**
+
+jwt:
+  secret: ThisIsASecretKeyForBookingCareApplicationThatIsVeryLongAndSecure1234567890
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka   # dùng khi chạy bằng docker compose/network
+      # defaultZone: http://localhost:8761/eureka             # dùng khi chạy local
+  instance:
+    prefer-ip-address: true

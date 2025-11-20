@@ -1,0 +1,24 @@
+package com.bookingcare.domain.entity;
+
+import java.time.ZonedDateTime;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ScheduleHold {
+    private String id;
+    private String packageScheduleId;
+    private String bookingId;
+    private String status;
+    private ZonedDateTime expireAt;
+    private ZonedDateTime createdAt;
+    private ZonedDateTime updatedAt;
+}

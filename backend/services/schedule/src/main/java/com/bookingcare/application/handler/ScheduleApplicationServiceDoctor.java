@@ -1,99 +1,176 @@
 package com.bookingcare.application.handler;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ScheduleApplicationServiceDoctor {
+import org.springframework.stereotype.Service;
 
-    // @Override
-    // @Transactional
-    // public Boolean updateHealthCheckPackageSchedules(UpdateHealthCheckPackageSchedulesCommand command) {
-    //     try {
-    //         Boolean flag = true;
+import com.bookingcare.application.dto.QueryPackageScheduleResponse;
+import com.bookingcare.application.mapper.ScheduleApplicationMapper;
+import com.bookingcare.application.ports.input.IScheduleApplicationServiceDoctor;
+import com.bookingcare.application.ports.output.IHealthCheckPackageDoctorSchedulesRepository;
+import com.bookingcare.application.ports.output.IHealthCheckPackageSchedulesRepository;
+import com.bookingcare.application.ports.output.IScheduleRepository;
+import com.bookingcare.domain.entity.HealthCheckPackageScheduleDoctor;
 
-    //         List<HealthCheckPackageSchedule> schedulesToUpdate = new ArrayList<>();
-    //         for (var i : command.schedules()) {
-    //             var existingSchedule = _scheduleRepository.findById(i.scheduleId());
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-    //             if (existingSchedule.isEmpty()) {
-    //                 log.warn("Schedule with ID {} not found.", i.scheduleId());
-    //                 flag = false;
-    //                 break;
-    //             }
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class ScheduleApplicationServiceDoctor implements IScheduleApplicationServiceDoctor{
 
-    //             var existingPackageSchedule = _healthCheckPackageSchedulesRepository
-    //                     .findByHealthCheckPackageIdScheduleIdAndDate(
-    //                             command.packageId(),
-    //                             i.scheduleId(),
-    //                             LocalDate.parse(i.scheduleDate()));
+    private final IHealthCheckPackageSchedulesRepository _healthCheckPackageSchedulesRepository;
+    private final IHealthCheckPackageDoctorSchedulesRepository _healthCheckPackageDoctorSchedulesRepository;
+    private final IScheduleRepository _scheduleRepository;
+    private final ScheduleApplicationMapper scheduleMapper;
 
-    //             HealthCheckPackageSchedule healthCheckPackageSchedule;
+    @Override
+    @Transactional
+    public boolean registerDoctorSchedules(String doctorId, List<String> PackageScheduleIds) {
+        try {
+            // 1. Validate input parameters
+            if (doctorId == null || doctorId.isEmpty()) {
+                log.warn("Invalid doctorId provided");
+                throw new IllegalArgumentException("Doctor ID cannot be null or empty");
+            }
+            
+            if (PackageScheduleIds == null || PackageScheduleIds.isEmpty()) {
+                log.warn("No schedule IDs provided for doctor: {}", doctorId);
+                throw new IllegalArgumentException("Schedule IDs list cannot be null or empty");
+            }
 
-    //             if (existingPackageSchedule.isEmpty()) {
-    //                 String rawPackageScheduleId = command.packageId().substring(6)
-    //                         + i.scheduleId().substring(6).replace("_", "")
-    //                         + i.scheduleDate().replace("-", "");
+            // 2. Verify all schedules exist
+            for (String packageScheduleId : PackageScheduleIds) {
+                var packageSchedule = _healthCheckPackageSchedulesRepository.findById(packageScheduleId)
+                        .orElseThrow(() -> new RuntimeException("Package schedule not found: " + packageScheduleId));
+                
+                // Optional: Validate schedule is not already fully assigned (if needed)
+                log.debug("Found schedule: {} for package: {}", packageScheduleId, packageSchedule.getPackageId());
+            }
 
-    //                 String encryptedPackageScheduleId = hashToSha256AndTruncate(rawPackageScheduleId);
+            // 3. Register schedules to doctor
+            for (String packageScheduleId : PackageScheduleIds) {
+                // Check if doctor is already assigned to this schedule
+                var existingAssignment = _healthCheckPackageDoctorSchedulesRepository
+                        .findByPackageScheduleIdAndDoctorId(packageScheduleId, doctorId);
+                
+                if (existingAssignment.isPresent() && !existingAssignment.get().getIsDeleted()) {
+                    log.warn("Doctor {} is already assigned to schedule {}", doctorId, packageScheduleId);
+                    continue; // Skip if already assigned and not deleted
+                }
 
-    //                 healthCheckPackageSchedule = HealthCheckPackageSchedule.builder()
-    //                         .packageScheduleId(encryptedPackageScheduleId)
-    //                         .packageId(command.packageId())
-    //                         .scheduleId(i.scheduleId())
-    //                         .scheduleDate(LocalDate.parse(i.scheduleDate()))
-    //                         .isDeleted(!i.isTicked())
-    //                         .build();
+                // Create new assignment
+                var doctorSchedule = HealthCheckPackageScheduleDoctor.builder()
+                        .id(generateId())
+                        .doctorId(doctorId)
+                        .packageScheduleId(packageScheduleId)
+                        .isDeleted(false)
+                        .build();
 
-    //                 log.info("Creating new package schedule: {}", encryptedPackageScheduleId);
-    //             } else {
-    //                 healthCheckPackageSchedule = existingPackageSchedule.get();
-    //                 healthCheckPackageSchedule.setIsDeleted(!i.isTicked());
+                _healthCheckPackageDoctorSchedulesRepository.save(doctorSchedule);
+                log.info("Assigned doctor {} to schedule {}", doctorId, packageScheduleId);
+            }
 
-    //                 log.info("Updating existing package schedule: {}",
-    //                         healthCheckPackageSchedule.getPackageScheduleId());
-    //             }
+            log.info("Successfully registered doctor {} to {} schedules", doctorId, PackageScheduleIds.size());
+            return true;
 
-    //             schedulesToUpdate.add(healthCheckPackageSchedule);
-    //         }
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error while registering doctor schedules: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error registering doctor {} to schedules: {}", doctorId, e.getMessage());
+            throw new RuntimeException("Failed to register doctor schedules", e);
+        }
+    }
 
-    //         _healthCheckPackageSchedulesRepository.saveAll(schedulesToUpdate);
+    // Helper method to generate unique ID (you can use your own ID generation logic)
+    private String generateId() {
+        return "HPSD" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000);
+    }
 
-    //         return flag;
-    //     } catch (Exception e) {
+    @Override
+    public List<QueryPackageScheduleResponse> getAllSchedulesByDoctorId(String doctorId) {
+        try {
+            // Lấy danh sách HealthCheckPackageScheduleDoctor theo doctorId
+            var doctorSchedules = _healthCheckPackageDoctorSchedulesRepository
+                    .findByDoctorId(doctorId);
+            
+            if (doctorSchedules == null || doctorSchedules.isEmpty()) {
+                log.warn("No package schedules found for doctor: {}", doctorId);
+                return new ArrayList<>();
+            }
+            
+            // Lấy thông tin chi tiết từ packageScheduleId
+            return doctorSchedules.stream()
+                    .map(doctorSchedule -> {
+                        // Fetch HealthCheckPackageSchedule object từ packageScheduleId
+                        var packageSchedule = _healthCheckPackageSchedulesRepository
+                                .findById(doctorSchedule.getPackageScheduleId());
+                        
+                        if (packageSchedule.isEmpty()) {
+                            log.warn("Package schedule not found: {}", doctorSchedule.getPackageScheduleId());
+                            return null;
+                        }
+                        
+                        // Fetch Schedule object từ scheduleId
+                        var schedule = _scheduleRepository
+                                .findById(packageSchedule.get().getScheduleId());
+                        
+                        return scheduleMapper.toQueryPackageScheduleResponse(
+                                packageSchedule.get(),
+                                schedule.orElse(null)
+                        );
+                    })
+                    .filter(response -> response != null)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error fetching package schedules for doctor: " + e.getMessage());
+            throw e;
+        }
+    }
 
-    //         log.error("Error updating health check package schedules: " + e.getMessage());
-    //         throw e;
-    //     }
-    // }
+    @Override
+    @Transactional
+    public boolean deleteSchedulePackageDoctorById(String doctorId, String packageScheduleId) {
+        try {
+            // Validate input parameters
+            if (doctorId == null || doctorId.isEmpty()) {
+                log.warn("Invalid doctorId provided");
+                throw new IllegalArgumentException("Doctor ID cannot be null or empty");
+            }
+            
+            if (packageScheduleId == null || packageScheduleId.isEmpty()) {
+                log.warn("Invalid packageScheduleId provided");
+                throw new IllegalArgumentException("Package Schedule ID cannot be null or empty");
+            }
+            
+            // Find existing assignment
+            var existingAssignment = _healthCheckPackageDoctorSchedulesRepository
+                    .findByPackageScheduleIdAndDoctorId(packageScheduleId, doctorId);
+            
+            if (existingAssignment.isEmpty()) {
+                log.warn("No assignment found for doctor {} and schedule {}", doctorId, packageScheduleId);
+                return false;
+            }
+            
+            // Hard delete - remove record from database
+            var assignment = existingAssignment.get();
+            _healthCheckPackageDoctorSchedulesRepository.deleteById(assignment.getId());
+            
+            log.info("Hard deleted assignment for doctor {} and schedule {}", doctorId, packageScheduleId);
+            return true;
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error deleting assignment for doctor {} and schedule {}: {}", 
+                    doctorId, packageScheduleId, e.getMessage());
+            throw new RuntimeException("Failed to delete doctor schedule assignment", e);
+        }
+    }
 
-
-
-    //   private String hashToSha256AndTruncate(String input) {
-    //     try {
-    //         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-    //         byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-
-    //         // Convert hash bytes to hexadecimal string
-    //         StringBuilder hexString = new StringBuilder();
-    //         for (byte hashByte : hashBytes) {
-    //             String hex = Integer.toHexString(0xff & hashByte);
-    //             if (hex.length() == 1) {
-    //                 hexString.append('0');
-    //             }
-    //             hexString.append(hex);
-    //         }
-
-    //         // Return first 16 characters of the hash
-    //         return hexString.toString().substring(0, 16);
-    //     } catch (NoSuchAlgorithmException e) {
-    //         log.error("SHA-256 algorithm not available", e);
-    //         // Fallback to a simple hash if SHA-256 is not available
-    //         return String.valueOf(input.hashCode()).replace("-", "").substring(0, Math.min(16, input.length()));
-    //     }
-    // }
-
-
-
-    
 }

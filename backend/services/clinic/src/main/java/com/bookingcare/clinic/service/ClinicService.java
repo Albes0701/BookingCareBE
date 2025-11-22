@@ -5,6 +5,7 @@ import com.bookingcare.clinic.dto.ClinicBranchDoctorDTO;
 import com.bookingcare.clinic.dto.DoctorsResponseDTO;
 import com.bookingcare.clinic.dto.ClinicBranchRequestDTO;
 import com.bookingcare.clinic.dto.ClinicBranchResponseDTO;
+import com.bookingcare.clinic.dto.ClinicPackageResponse;
 import com.bookingcare.clinic.dto.ClinicPatchRequestDTO;
 import com.bookingcare.clinic.dto.ClinicRequestDTO;
 import com.bookingcare.clinic.dto.ClinicResponseDTO;
@@ -19,6 +20,7 @@ import com.bookingcare.clinic.exception.ApiException;
 import com.bookingcare.clinic.exception.ErrorCode;
 import com.bookingcare.clinic.mapper.ClinicMapper;
 import com.bookingcare.clinic.repository.ClinicBranchDoctorRepository;
+import com.bookingcare.clinic.repository.ClinicBranchHealthcheckPackageRepository;
 import com.bookingcare.clinic.repository.ClinicBranchRepository;
 import com.bookingcare.clinic.repository.ClinicRepository;
 import com.bookingcare.clinic.repository.ClinicVerificationRepository;
@@ -53,6 +55,7 @@ public class ClinicService {
     private final ClinicBranchDoctorRepository clinicBranchDoctorRepository;
     private final ClinicVerificationRepository clinicVerificationRepository;
     private final ExpertiseClient expertiseClient;
+    private final ClinicBranchHealthcheckPackageRepository clinicBranchHealthcheckPackageRepository;
 
     public ClinicService(ClinicRepository clinicRepository,
                          ClinicMapper clinicMapper,
@@ -60,7 +63,8 @@ public class ClinicService {
                          ClinicBranchRepository clinicBranchRepository,
                          ClinicBranchDoctorRepository clinicBranchDoctorRepository,
                          ClinicVerificationRepository clinicVerificationRepository,
-                         ExpertiseClient expertiseClient) {
+                         ExpertiseClient expertiseClient,
+                         ClinicBranchHealthcheckPackageRepository clinicBranchHealthcheckPackageRepository) {
         this.clinicRepository = clinicRepository;
         this.clinicMapper = clinicMapper;
         this.currentUserService = currentUserService;
@@ -68,6 +72,7 @@ public class ClinicService {
         this.clinicBranchDoctorRepository = clinicBranchDoctorRepository;
         this.clinicVerificationRepository = clinicVerificationRepository;
         this.expertiseClient = expertiseClient;
+        this.clinicBranchHealthcheckPackageRepository = clinicBranchHealthcheckPackageRepository;
     }
 
     // Returns all approved clinics matching optional search criteria.
@@ -612,6 +617,13 @@ public class ClinicService {
                 .findBySlugAndStatusAndIsDeletedFalse(clinicSlug, ClinicStatus.APPROVED)
                 .map(clinicMapper::toClinicResponseDTO)
                 .orElseThrow(() -> new ApiException(ErrorCode.CLINIC_NOT_FOUND));
+    }
+
+
+    public List<ClinicPackageResponse> getPackageByClinicBranchId(String clinicBranchId) {
+        return clinicBranchHealthcheckPackageRepository.findPackageIdByClinicBranchId(clinicBranchId)
+                .stream()
+                .collect(Collectors.toList());
     }
 
 

@@ -2,6 +2,7 @@ package com.bookingcare.clinic.controller;
 
 import com.bookingcare.clinic.dto.ClinicBranchDoctorDTO;
 import com.bookingcare.clinic.dto.ClinicBranchResponseDTO;
+import com.bookingcare.clinic.dto.ClinicPackageResponse;
 import com.bookingcare.clinic.dto.ClinicBranchRequestDTO;
 import com.bookingcare.clinic.dto.ClinicPatchRequestDTO;
 import com.bookingcare.clinic.dto.ClinicRejectionRequestDTO;
@@ -82,6 +83,14 @@ public class ClinicController {
     public ResponseEntity<ClinicResponseDTO> getApprovedClinicDetailBySlug(@PathVariable("slug") String clinicSlug) {
         ClinicResponseDTO clinic = clinicService.getApprovedClinicDetailBySlug(clinicSlug);
         return ResponseEntity.ok(clinic);
+    }
+
+    @GetMapping("/branches/package/{clinicBranchId}")
+    public List<ClinicPackageResponse> getClinicBranchesByPackageId(
+            @PathVariable String clinicBranchId
+    ) { 
+        List<ClinicPackageResponse> branches = clinicService.getPackageByClinicBranchId(clinicBranchId);
+        return branches;
     }
 
 

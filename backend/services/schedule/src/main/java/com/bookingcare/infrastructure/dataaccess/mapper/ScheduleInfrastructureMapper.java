@@ -3,9 +3,11 @@ package com.bookingcare.infrastructure.dataaccess.mapper;
 import org.springframework.stereotype.Component;
 
 import com.bookingcare.domain.entity.HealthCheckPackageSchedule;
+import com.bookingcare.domain.entity.HealthCheckPackageScheduleDoctor;
 import com.bookingcare.domain.entity.Schedule;
 import com.bookingcare.domain.entity.ScheduleHold;
 import com.bookingcare.infrastructure.dataaccess.entity.HealthCheckPackageScheduleJpaEntity;
+import com.bookingcare.infrastructure.dataaccess.entity.HealthCheckPackageScheduleDoctorJpaEntity;
 import com.bookingcare.infrastructure.dataaccess.entity.ScheduleJpaEntity;
 import com.bookingcare.infrastructure.dataaccess.entity.ScheduleHoldJpaEntity;
 
@@ -45,6 +47,37 @@ public class ScheduleInfrastructureMapper {
                 .capacity(domain.getCapacity())
                 .bookedCount(domain.getBookedCount())
                 .overbookLimit(domain.getOverbookLimit())
+                .createdAt(domain.getCreatedAt())
+                .updatedAt(domain.getUpdatedAt())
+                .isDeleted(domain.getIsDeleted())
+                .build();
+    }
+
+    // HealthCheckPackageScheduleDoctor Mappings
+    public HealthCheckPackageScheduleDoctor toDomain(HealthCheckPackageScheduleDoctorJpaEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return HealthCheckPackageScheduleDoctor.builder()
+                .id(entity.getId())
+                .packageScheduleId(entity.getPackageScheduleId())
+                .doctorId(entity.getDoctorId())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .isDeleted(entity.getIsDeleted())
+                .build();
+    }
+
+    public HealthCheckPackageScheduleDoctorJpaEntity toJpaEntity(HealthCheckPackageScheduleDoctor domain) {
+        if (domain == null) {
+            return null;
+        }
+
+        return HealthCheckPackageScheduleDoctorJpaEntity.builder()
+                .id(domain.getId())
+                .packageScheduleId(domain.getPackageScheduleId())
+                .doctorId(domain.getDoctorId())
                 .createdAt(domain.getCreatedAt())
                 .updatedAt(domain.getUpdatedAt())
                 .isDeleted(domain.getIsDeleted())

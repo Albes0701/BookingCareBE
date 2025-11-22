@@ -13,8 +13,8 @@ import com.bookingcare.infrastructure.client.dto.HealthCheckPackageResponse;
 
 
 @FeignClient(
-        name = "expertise-service",
-        url = "${application.config.expertise-url}",
+        name = "package-service",
+        url = "${application.config.package-service-url}",
         configuration = FeignConfig.class
 )
 public interface HealthPackageServiceClient {

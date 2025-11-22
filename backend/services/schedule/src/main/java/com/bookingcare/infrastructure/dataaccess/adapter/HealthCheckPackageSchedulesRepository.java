@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import com.bookingcare.application.dto.PackageDetailResponse;
 import com.bookingcare.application.ports.output.IHealthCheckPackageSchedulesRepository;
 import com.bookingcare.domain.entity.HealthCheckPackageSchedule;
 import com.bookingcare.infrastructure.dataaccess.entity.HealthCheckPackageScheduleJpaEntity;
@@ -39,7 +38,7 @@ public class HealthCheckPackageSchedulesRepository implements IHealthCheckPackag
                         .findByHealthCheckPackageIdAndDate(healthCheckPackageId, date)
                         .stream()
                         .map(mapper::toDomain)
-                        .sorted((a, b) -> a.getSchedule().getId().compareToIgnoreCase(b.getSchedule().getId()))
+                        .sorted((a, b) -> a.getScheduleDate().compareTo(b.getScheduleDate()))
                         .toList();
         }
 
@@ -89,6 +88,15 @@ public class HealthCheckPackageSchedulesRepository implements IHealthCheckPackag
         public List<HealthCheckPackageSchedule> findByPackageIdAndScheduleDate(String packageId, LocalDate scheduleDate) {
         return _healthCheckPackageScheduleJpaRepository
                 .findByPackageIdAndScheduleDate(packageId, scheduleDate)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+        }
+
+        @Override
+        public List<HealthCheckPackageSchedule> findByPackageIdAndNotDeleted(String packageId) {
+        return _healthCheckPackageScheduleJpaRepository
+                .findByPackageIdAndIsDeletedFalse(packageId)
                 .stream()
                 .map(mapper::toDomain)
                 .toList();

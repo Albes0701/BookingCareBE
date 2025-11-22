@@ -17,6 +17,7 @@ public interface IHealthCheckPackageSchedulesRepository {
 
     List<HealthCheckPackageSchedule> findByPackageIdAndScheduleDate(String packageId, LocalDate scheduleDate);
 
+    List<HealthCheckPackageSchedule> findByPackageIdAndNotDeleted(String packageId);
 
 
 }

@@ -21,5 +21,7 @@ public interface IHealthCheckPackageScheduleJpaRepository extends JpaRepository<
 
     List<HealthCheckPackageScheduleJpaEntity> findByPackageId(String packageId);
 
+    @Query("SELECT h FROM HealthCheckPackageScheduleJpaEntity h WHERE h.packageId = :packageId AND h.isDeleted = FALSE")
+    List<HealthCheckPackageScheduleJpaEntity> findByPackageIdAndIsDeletedFalse(String packageId);
 
 }

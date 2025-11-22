@@ -1,12 +1,23 @@
 package com.bookingcare.application.ports.input;
 
+import java.util.List;
+
+import com.bookingcare.application.dto.QueryPackageScheduleResponse;
+
 public interface IScheduleApplicationServiceDoctor {
-    // Xem tất cả lịch đã được đặt của bác sĩ
 
-    // Tạo lịch mới
+    // Register schedules for doctor
+    boolean registerDoctorSchedules(String doctorId, List<String> scheduleIds);
 
-    // Sửa lịch đã tạo
 
-    // Xoá lịch đã tạo
+    // Get all package schedules by doctorId
+    List<QueryPackageScheduleResponse> getAllSchedulesByDoctorId(String doctorId);
     
+
+    // Delete doctor package schedule by scheduleId ownered by doctor
+    boolean deleteSchedulePackageDoctorById(String doctorId, String packageScheduleId);
+ 
+
+
+
 }

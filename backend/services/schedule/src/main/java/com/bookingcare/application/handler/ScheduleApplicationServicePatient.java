@@ -15,6 +15,7 @@ import com.bookingcare.application.dto.QueryPackageScheduleResponse;
 import com.bookingcare.application.mapper.ScheduleApplicationMapper;
 import com.bookingcare.application.ports.input.IScheduleApplicationServicePatient;
 import com.bookingcare.application.ports.output.IHealthCheckPackageSchedulesRepository;
+import com.bookingcare.application.ports.output.IHealthCheckPackageDoctorSchedulesRepository;
 import com.bookingcare.application.ports.output.IHealthPackageServicePort;
 import com.bookingcare.application.ports.output.IScheduleHoldRepository;
 import com.bookingcare.application.ports.output.IScheduleRepository;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ScheduleApplicationServicePatient implements IScheduleApplicationServicePatient {
     private final IHealthCheckPackageSchedulesRepository _healthCheckPackageSchedulesRepository;
+    private final IHealthCheckPackageDoctorSchedulesRepository _healthCheckPackageDoctorSchedulesRepository;
     private final IScheduleRepository _scheduleRepository;
     private final ScheduleApplicationMapper scheduleMapper;
     private final IHealthPackageServicePort _healthPackageServicePort;
@@ -109,11 +111,6 @@ public class ScheduleApplicationServicePatient implements IScheduleApplicationSe
             throw e;
         }
     }
-
-    
-
-
-    
 
     @Transactional
     @Override
@@ -324,6 +321,48 @@ public class ScheduleApplicationServicePatient implements IScheduleApplicationSe
             
         } catch (Exception e) {
             log.error("Error releasing hold schedule: " + e.getMessage());
+            throw e;
+        }
+    }
+
+
+    @Override
+    public List<QueryPackageScheduleResponse> getPackageScheduleByDoctorId(String doctorId) {
+        try {
+            // Lấy danh sách HealthCheckPackageScheduleDoctor theo doctorId
+            var doctorSchedules = _healthCheckPackageDoctorSchedulesRepository
+                    .findByDoctorId(doctorId);
+            
+            if (doctorSchedules == null || doctorSchedules.isEmpty()) {
+                log.warn("No package schedules found for doctor: {}", doctorId);
+                return new ArrayList<>();
+            }
+            
+            // Lấy thông tin chi tiết từ packageScheduleId
+            return doctorSchedules.stream()
+                    .map(doctorSchedule -> {
+                        // Fetch HealthCheckPackageSchedule object từ packageScheduleId
+                        var packageSchedule = _healthCheckPackageSchedulesRepository
+                                .findById(doctorSchedule.getPackageScheduleId());
+                        
+                        if (packageSchedule.isEmpty()) {
+                            log.warn("Package schedule not found: {}", doctorSchedule.getPackageScheduleId());
+                            return null;
+                        }
+                        
+                        // Fetch Schedule object từ scheduleId
+                        var schedule = _scheduleRepository
+                                .findById(packageSchedule.get().getScheduleId());
+                        
+                        return scheduleMapper.toQueryPackageScheduleResponse(
+                                packageSchedule.get(),
+                                schedule.orElse(null)
+                        );
+                    })
+                    .filter(response -> response != null)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error fetching package schedules for doctor: " + e.getMessage());
             throw e;
         }
     }

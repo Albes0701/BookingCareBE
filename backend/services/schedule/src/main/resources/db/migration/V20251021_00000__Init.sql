@@ -165,6 +165,44 @@ FOR EACH ROW
 EXECUTE FUNCTION check_schedule_day_consistency();
 
 
+-- ============================================
+-- Bảng N-N: Doctor <-> HealthCheckPackageSchedule
+-- Mỗi record = 1 bác sĩ gán vào 1 package_schedule cụ thể
+-- ============================================
+
+CREATE TABLE health_check_package_schedules_doctor (
+    id                  VARCHAR(255) PRIMARY KEY,        -- HPSDxxx (tuỳ bạn đặt)
+    package_schedule_id VARCHAR(255) NOT NULL,
+    doctor_id           VARCHAR(255) NOT NULL,
+
+    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          BOOLEAN      NOT NULL DEFAULT FALSE
+);
+
+-- FK tới slot cụ thể
+ALTER TABLE health_check_package_schedules_doctor
+    ADD CONSTRAINT fk_hcpsd_package_schedule
+        FOREIGN KEY (package_schedule_id)
+            REFERENCES health_check_package_schedules(package_schedule_id);
+
+
+-- Không cho 1 bác sĩ bị gán trùng 2 lần vào cùng 1 slot (khi chưa delete)
+CREATE UNIQUE INDEX ux_hcpsd_pkg_schedule_doctor
+ON health_check_package_schedules_doctor (package_schedule_id, doctor_id)
+WHERE is_deleted = FALSE;
+
+-- Index hỗ trợ query nhanh:
+-- 1) Lấy danh sách bác sĩ theo 1 package_schedule
+CREATE INDEX idx_hcpsd_package_schedule
+    ON health_check_package_schedules_doctor (package_schedule_id)
+    WHERE is_deleted = FALSE;
+
+-- 2) Lấy danh sách slot (package_schedule) theo 1 bác sĩ
+CREATE INDEX idx_hcpsd_doctor
+    ON health_check_package_schedules_doctor (doctor_id)
+    WHERE is_deleted = FALSE;
+
 
 
 

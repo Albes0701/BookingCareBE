@@ -17,6 +17,9 @@ public interface IScheduleApplicationServicePatient {
     // Lấy chi tiết thông tin của HealthCheckPackageSchedule bằng ID
     QueryHealthCheckPackageSchedulesResponse getHealthCheckPackageScheduleById(String packageScheduleId);
 
+    // Lấy schedule dựa vào doctorId
+    List<QueryPackageScheduleResponse> getPackageScheduleByDoctorId(String doctorId);
+
     // Internal - Giữ chỗ cho booking
     String holdScheduleForBooking(String packageScheduleId, String bookingId);
 

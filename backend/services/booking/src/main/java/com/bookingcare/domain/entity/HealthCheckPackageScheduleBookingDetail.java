@@ -6,9 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
 
 import com.bookingcare.domain.valueobject.BookingStatus;
-import com.bookingcare.domain.valueobject.PaymentStatus;
 import com.bookingcare.domain.valueobject.PurchaseMethod;
-import com.bookingcare.domain.valueobject.VisitStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,46 +19,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class HealthCheckPackageScheduleBookingDetail {
   private String id;
-  
-  // Thông tin người thân (nếu booking hộ)
   private String patientRelativesName;
   private String patientRelativesPhoneNumber;
-  
-  // Thông tin liên kết domain
   private String patientId;
   private String packageScheduleId;
   private String bookingPackageId;
-  private String clinicId;
-  private String clinicBranchId;
-  
-  // Bác sĩ phụ trách ca khám này
-  private String doctorId;
-  
-  // Lý do đặt lịch, ghi chú thêm từ bệnh nhân
   private String bookingReason;
-  
-  // Trạng thái booking theo lifecycle đặt lịch / thanh toán
+  private String clinicId;
   private BookingStatus bookingStatus;
-  
-  // Trạng thái thực tế của buổi khám tại phòng khám
-  private VisitStatus visitStatus;
-  
-  // Phương thức mua / thanh toán
   private PurchaseMethod purchaseMethod;
-  
-  // Thông tin liên quan tới HOLD SLOT (Schedule Service)
-  private String scheduleHoldId;
-  private ZonedDateTime holdExpireAt;
-  
-  // Thông tin cache Payment
-  private String externalPaymentId;
-  private PaymentStatus lastPaymentStatus;
-  
-  // Timestamps
   private ZonedDateTime createdDate;
   private ZonedDateTime updatedDate;
 
-  // Relationships
+  private HealthCheckPackageSchedule packageSchedule;
   private BookingPackage bookingPackage;
 
   public String generateId() {
@@ -90,12 +61,6 @@ public class HealthCheckPackageScheduleBookingDetail {
 
   public void initialize() {
     this.id = generateId();
-    this.bookingStatus = BookingStatus.PENDING_SCHEDULE;
-    this.createdDate = ZonedDateTime.now();
-    this.updatedDate = ZonedDateTime.now();
-  }
-  
-  public void updateTimestamp() {
-    this.updatedDate = ZonedDateTime.now();
+    this.bookingStatus = BookingStatus.PENDING;
   }
 }

@@ -27,6 +27,7 @@ CREATE TABLE health_check_package_schedule_booking_details
     package_schedule_id VARCHAR(255) NOT NULL,
     booking_package_id VARCHAR(255) NOT NULL,
     booking_reason TEXT,
+    doctor_id VARCHAR(255),
     clinic_id VARCHAR(255) NOT NULL,
     booking_status VARCHAR(50) NOT NULL,
     purchase_method VARCHAR(50) NOT NULL,

@@ -1,8 +1,4 @@
 package com.bookingcare.application.handler;
-
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,18 +168,17 @@ public class ScheduleApplicationServiceClinicAdmin implements IScheduleApplicati
                 throw new RuntimeException("Package schedule already exists for this date");
             }
             
-            // 3. Generate unique package schedule ID using hash
-            String rawPackageScheduleId = request.packageId().substring(6)
-                    + request.scheduleId().substring(6).replace("_", "")
-                    + request.getScheduleDate().toString().replace("-", "");
-            
-            String encryptedPackageScheduleId = hashToSha256AndTruncate(rawPackageScheduleId);
-            
-            log.debug("Generated package schedule ID: {}", encryptedPackageScheduleId);
+            // 3. Generate unique package schedule ID following format: PKGSCHDL_PKG##_SLOT###_YYYYMMDD
+            String packageScheduleId = generatePackageScheduleId(
+                    request.packageId(),
+                    request.scheduleId(),
+                    request.getScheduleDate());
+
+            log.debug("Generated package schedule ID: {}", packageScheduleId);
             
             // 4. Create new package schedule
             var newPackageSchedule = HealthCheckPackageSchedule.builder()
-                    .packageScheduleId(encryptedPackageScheduleId)
+                    .packageScheduleId(packageScheduleId)
                     .packageId(request.packageId())
                     .scheduleId(request.scheduleId())
                     .scheduleDate(request.getScheduleDate())
@@ -198,7 +193,7 @@ public class ScheduleApplicationServiceClinicAdmin implements IScheduleApplicati
             var savedPackageSchedule = _healthCheckPackageSchedulesRepository.save(newPackageSchedule);
             
             log.info("Successfully created package schedule: {} for package: {}, schedule: {}, date: {}",
-                    encryptedPackageScheduleId, request.packageId(), request.scheduleId(), 
+                    newPackageSchedule, request.packageId(), request.scheduleId(), 
                     request.getScheduleDate());
             
             // 7. Map to response DTO
@@ -339,29 +334,7 @@ public class ScheduleApplicationServiceClinicAdmin implements IScheduleApplicati
     }
 
 
-    private String hashToSha256AndTruncate(String input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-
-            // Convert hash bytes to hexadecimal string
-            StringBuilder hexString = new StringBuilder();
-            for (byte hashByte : hashBytes) {
-                String hex = Integer.toHexString(0xff & hashByte);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-
-            // Return first 16 characters of the hash
-            return hexString.toString().substring(0, 16);
-        } catch (NoSuchAlgorithmException e) {
-            log.error("SHA-256 algorithm not available", e);
-            // Fallback to a simple hash if SHA-256 is not available
-            return String.valueOf(input.hashCode()).replace("-", "").substring(0, Math.min(16, input.length()));
-        }
-    }
+    
 
     @Override
     @Transactional
@@ -488,6 +461,46 @@ public class ScheduleApplicationServiceClinicAdmin implements IScheduleApplicati
     // Helper method to generate unique ID
     private String generateId() {
         return "HPSD" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
+    }
+
+    // Helper method to generate package schedule ID
+    private String generatePackageScheduleId(String packageId, String scheduleId, java.time.LocalDate scheduleDate) {
+        try {
+            // Extract numeric parts from packageId and scheduleId
+            String packageNumber = extractNumericPart(packageId);
+            String scheduleNumber = extractNumericPart(scheduleId);
+            
+            // Format date as YYYYMMDD
+            String formattedDate = scheduleDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            
+            // Build formatted ID: PKGSCHDL_PKG##_SLOT###_YYYYMMDD
+            return String.format("PKGSCHDL_PKG%s_SLOT%s_%s",
+                    padNumber(packageNumber, 2),
+                    padNumber(scheduleNumber, 3),
+                    formattedDate);
+            
+        } catch (Exception e) {
+            log.error("Error generating package schedule ID: {}", e.getMessage());
+            throw new RuntimeException("Failed to generate package schedule ID", e);
+        }
+    }
+
+    private String extractNumericPart(String input) {
+        if (input == null || input.isEmpty()) {
+            return "0";
+        }
+        String numeric = input.replaceAll("[^0-9]", "");
+        return numeric.isEmpty() ? "0" : numeric;
+    }
+
+    private String padNumber(String number, int length) {
+        try {
+            int numValue = Integer.parseInt(number);
+            return String.format("%0" + length + "d", numValue);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid number format: {}, using 0", number);
+            return String.format("%0" + length + "d", 0);
+        }
     }
 
     

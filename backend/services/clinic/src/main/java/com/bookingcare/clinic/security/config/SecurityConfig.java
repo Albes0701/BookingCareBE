@@ -37,6 +37,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/clinics/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/clinics").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/clinics/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/clinics/clinic-admin/").hasRole("CLINIC_ADMIN")
+
                         .anyRequest().authenticated()
                 );
 

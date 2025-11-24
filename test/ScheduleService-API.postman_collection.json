@@ -1,0 +1,1104 @@
+{
+  "info": {
+    "_postman_id": "8e5f7a9b-3c4d-6e7f-8a9b-0c1d2e3f4a5b",
+    "name": "ScheduleService API",
+    "description": "Postman collection for ScheduleService - testing all endpoints (Patient, Doctor, Clinic Admin, Internal APIs) with JWT authentication.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Initialize base ID if not set",
+          "if (!pm.environment.get('schedule_base_id')) {",
+          "    const baseId = Math.floor(Date.now() % 1000000) + 1000;",
+          "    pm.environment.set('schedule_base_id', baseId);",
+          "    pm.environment.set('package_schedule_id', 'pkg-sch-' + baseId);",
+          "    pm.environment.set('booking_id', 'booking-' + baseId);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Admin (admin/123456)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.environment.set('access_token', response.data.accessToken);",
+                  "    console.log('Access token saved (Admin):', response.data.accessToken.substring(0, 20) + '...');",
+                  "} else if (response && response.accessToken) {",
+                  "    pm.environment.set('access_token', response.accessToken);",
+                  "    console.log('Access token saved (Admin)');",
+                  "}",
+                  "",
+                  "pm.test('Access token received', () => {",
+                  "    pm.expect(pm.environment.get('access_token')).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_base_url}}/login",
+              "host": ["{{auth_base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Patient (quyhung/123456)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.environment.set('access_token', response.data.accessToken);",
+                  "    console.log('Access token saved (Patient):', response.data.accessToken.substring(0, 20) + '...');",
+                  "} else if (response && response.accessToken) {",
+                  "    pm.environment.set('access_token', response.accessToken);",
+                  "    console.log('Access token saved (Patient)');",
+                  "}",
+                  "",
+                  "pm.test('Access token received', () => {",
+                  "    pm.expect(pm.environment.get('access_token')).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"quyhung\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_base_url}}/login",
+              "host": ["{{auth_base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Clinic Admin (tran.chien.admin/123456)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.environment.set('access_token', response.data.accessToken);",
+                  "    console.log('Access token saved (Clinic Admin):', response.data.accessToken.substring(0, 20) + '...');",
+                  "} else if (response && response.accessToken) {",
+                  "    pm.environment.set('access_token', response.accessToken);",
+                  "    console.log('Access token saved (Clinic Admin)');",
+                  "}",
+                  "",
+                  "pm.test('Access token received', () => {",
+                  "    pm.expect(pm.environment.get('access_token')).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"tran.chien.admin\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_base_url}}/login",
+              "host": ["{{auth_base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Doctor (doctor/123456)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data && response.data.accessToken) {",
+                  "    pm.environment.set('access_token', response.data.accessToken);",
+                  "    console.log('Access token saved (Doctor):', response.data.accessToken.substring(0, 20) + '...');",
+                  "} else if (response && response.accessToken) {",
+                  "    pm.environment.set('access_token', response.accessToken);",
+                  "    console.log('Access token saved (Doctor)');",
+                  "}",
+                  "",
+                  "pm.test('Access token received', () => {",
+                  "    pm.expect(pm.environment.get('access_token')).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"doctor\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{auth_base_url}}/login",
+              "host": ["{{auth_base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Patient APIs",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health check successful', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response has status code 200', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test",
+              "host": ["{{base_url}}"],
+              "path": ["test"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Package Schedule By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response has data', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/{{package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["{{package_schedule_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Schedules By Package ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response is array', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/by-package/{{package_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["by-package", "{{package_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Schedules By Slug And Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response is array', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/by-slug-and-date/{{health_check_package_slug}}/{{schedule_date}}",
+              "host": ["{{base_url}}"],
+              "path": ["by-slug-and-date", "{{health_check_package_slug}}", "{{schedule_date}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Schedules By Doctor ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response is array', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/by-doctor/{{doctor_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["by-doctor", "{{doctor_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Internal APIs",
+      "item": [
+        {
+          "name": "Hold Schedule For Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data) {",
+                  "    pm.environment.set('schedule_hold_id', response.data);",
+                  "    console.log('Schedule hold ID saved:', response.data);",
+                  "}",
+                  "",
+                  "pm.test('Hold created successfully', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/hold/{{package_schedule_id}}/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "hold", "{{package_schedule_id}}", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Schedule Availability",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Availability check returned', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.be.a('boolean');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/check-availability/{{package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "check-availability", "{{package_schedule_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Hold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Hold confirmed successfully', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/confirm-hold/{{schedule_hold_id}}/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "confirm-hold", "{{schedule_hold_id}}", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Expire Hold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Hold expired successfully', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/expire-hold/{{schedule_hold_id}}/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "expire-hold", "{{schedule_hold_id}}", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Hold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Hold cancelled successfully', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/cancel-hold/{{schedule_hold_id}}/{{booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "cancel-hold", "{{schedule_hold_id}}", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Doctor APIs",
+      "item": [
+        {
+          "name": "Get All Schedules By Doctor ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response is array', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/{{doctor_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["doctor", "{{doctor_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Doctor Schedules",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate package schedule IDs for testing",
+                  "const packageScheduleIds = [",
+                  "    pm.environment.get('package_schedule_id'),",
+                  "    'pkg-sch-' + (pm.environment.get('schedule_base_id') + 1)",
+                  "];",
+                  "pm.environment.set('test_package_schedule_ids', JSON.stringify(packageScheduleIds));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Doctor schedules registered', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{test_package_schedule_ids}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctor/register/{{doctor_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["doctor", "register", "{{doctor_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Schedule Package Doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 or 404', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response has code', () => {",
+                  "    pm.expect(response.code).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/doctor/{{doctor_id}}/{{package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["doctor", "{{doctor_id}}", "{{package_schedule_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clinic Admin APIs",
+      "item": [
+        {
+          "name": "Get All Schedules By Clinic Branch ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Response is array', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/clinic-branch/{{clinic_branch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "clinic-branch", "{{clinic_branch_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Package Schedule",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate new package schedule ID",
+                  "const newId = 'pkg-sch-' + Date.now();",
+                  "pm.environment.set('new_package_schedule_id', newId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 or 201', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data && response.data.id) {",
+                  "    pm.environment.set('package_schedule_id', response.data.id);",
+                  "    console.log('Package schedule created:', response.data.id);",
+                  "}",
+                  "",
+                  "pm.test('Package schedule created', () => {",
+                  "    pm.expect(response.code).to.be.oneOf([200, 201]);",
+                  "    pm.expect(response.data).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"healthCheckPackageId\": \"{{package_id}}\",\n  \"clinicBranchId\": \"{{clinic_branch_id}}\",\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"scheduleDate\": \"{{schedule_date}}\",\n  \"capacity\": {{capacity}},\n  \"bookedCount\": {{booked_count}},\n  \"price\": 500000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Package Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Package schedule updated', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "    pm.expect(response.data).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"healthCheckPackageId\": \"{{package_id}}\",\n  \"clinicBranchId\": \"{{clinic_branch_id}}\",\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"scheduleDate\": \"{{schedule_date}}\",\n  \"capacity\": 15,\n  \"bookedCount\": {{booked_count}},\n  \"price\": 550000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/{{package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "{{package_schedule_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Doctors To Package Schedule",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate doctor IDs for testing",
+                  "const doctorIds = [",
+                  "    pm.environment.get('doctor_id'),",
+                  "    'doctor-002',",
+                  "    'doctor-003'",
+                  "];",
+                  "pm.environment.set('test_doctor_ids', JSON.stringify(doctorIds));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Doctors registered successfully', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{test_doctor_ids}}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/{{package_schedule_id}}/register-doctors",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "{{package_schedule_id}}", "register-doctors"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Package Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Package schedule deleted', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/{{package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "{{package_schedule_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Complete Flow Test",
+      "description": "Full workflow: Create -> Hold -> Confirm -> Cancel",
+      "item": [
+        {
+          "name": "1. Create Schedule (Admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const newId = 'flow-pkg-sch-' + Date.now();",
+                  "pm.environment.set('flow_package_schedule_id', newId);",
+                  "pm.environment.set('flow_booking_id', 'flow-booking-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schedule created', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data && response.data.id) {",
+                  "    pm.environment.set('flow_package_schedule_id', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"healthCheckPackageId\": \"{{package_id}}\",\n  \"clinicBranchId\": \"{{clinic_branch_id}}\",\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"scheduleDate\": \"{{schedule_date}}\",\n  \"capacity\": 10,\n  \"bookedCount\": 0,\n  \"price\": 500000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Check Availability",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Availability checked', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Schedule is available', () => {",
+                  "    pm.expect(response.data).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/check-availability/{{flow_package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "check-availability", "{{flow_package_schedule_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Hold Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Hold created', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response && response.data) {",
+                  "    pm.environment.set('flow_schedule_hold_id', response.data);",
+                  "}",
+                  "",
+                  "pm.test('Hold ID received', () => {",
+                  "    pm.expect(response.data).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/hold/{{flow_package_schedule_id}}/{{flow_booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "hold", "{{flow_package_schedule_id}}", "{{flow_booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Confirm Hold",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Hold confirmed', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Confirmation successful', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/confirm-hold/{{flow_schedule_hold_id}}/{{flow_booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "confirm-hold", "{{flow_schedule_hold_id}}", "{{flow_booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Cancel Hold (Cleanup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Hold cancelled', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.test('Cancellation successful', () => {",
+                  "    pm.expect(response.code).to.eql(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/internal/cancel-hold/{{flow_schedule_hold_id}}/{{flow_booking_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["internal", "cancel-hold", "{{flow_schedule_hold_id}}", "{{flow_booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Delete Schedule (Cleanup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schedule deleted', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/{{flow_package_schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "{{flow_package_schedule_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,400 @@
+{
+  "info": {
+    "_postman_id": "7f4adb8c-9c52-4f14-9c4c-9310d4431f33",
+    "name": "CatalogService API",
+    "description": "Postman smoke suite cho CatalogService (category, supplier, product, inventory).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Catalog Smoke",
+      "description": "Chạy tuần tự để tạo dữ liệu giả, kiểm tra response envelope và dọn dẹp.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if(!pm.environment.get(\"catalog_base_id\")){const b=Math.floor(Date.now()%1e6)+1000;pm.environment.set(\"catalog_base_id\",b);pm.environment.set(\"catalog_category_id\",b+1);pm.environment.set(\"catalog_supplier_id\",b+2);pm.environment.set(\"catalog_product_id\",b+3);pm.environment.set(\"catalog_inventory_id\",b+4);pm.environment.set(\"catalog_product_barcode\",\"PM-\"+(b+3));pm.environment.set(\"catalog_inventory_quantity\",25);}const base=pm.environment.get(\"catalog_base_id\");if(!pm.environment.get(\"catalog_category_name\")){pm.environment.set(\"catalog_category_name\",\"PM Category \"+base);}if(!pm.environment.get(\"catalog_supplier_name\")){pm.environment.set(\"catalog_supplier_name\",\"PM Supplier \"+base);}if(!pm.environment.get(\"catalog_product_name\")){pm.environment.set(\"catalog_product_name\",\"Postman Product \"+base);}"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "Category - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"CategoryID\": {{catalog_category_id}},\n  \"CategoryName\": \"{{catalog_category_name}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "categories", "create"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));",
+                  "const req=JSON.parse(pm.variables.replaceIn(pm.request.body.raw));pm.environment.set('catalog_category_id',req.CategoryID);pm.environment.set('catalog_category_name',req.CategoryName);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Supplier - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"SupplierID\": {{catalog_supplier_id}},\n  \"SupplierName\": \"PM Supplier {{catalog_base_id}}\",\n  \"PhoneNumber\": \"+8490{{catalog_base_id}}\",\n  \"Email\": \"pm-supplier-{{catalog_base_id}}@example.com\",\n  \"Address\": \"123 Testing Street\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers", "create"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));",
+                  "const req=JSON.parse(pm.variables.replaceIn(pm.request.body.raw));pm.environment.set('catalog_supplier_id',req.SupplierID);pm.environment.set('catalog_supplier_name',req.SupplierName);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ProductID\": {{catalog_product_id}},\n  \"CategoryID\": {{catalog_category_id}},\n  \"SupplierID\": {{catalog_supplier_id}},\n  \"ProductName\": \"{{catalog_product_name}}\",\n  \"Barcode\": \"{{catalog_product_barcode}}\",\n  \"Price\": 125000,\n  \"Unit\": \"box\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "create"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));",
+                  "const req=JSON.parse(pm.variables.replaceIn(pm.request.body.raw));pm.environment.set('catalog_product_id',req.ProductID);pm.environment.set('catalog_product_name',req.ProductName);pm.environment.set('catalog_product_barcode',req.Barcode);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product - Get By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/get-by-id/{{catalog_product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "get-by-id", "{{catalog_product_id}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));pm.test('Id matches',()=>pm.expect(res.data.ProductID||res.data.productID).eq(Number(pm.environment.get('catalog_product_id'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product - Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ProductID\": {{catalog_product_id}},\n  \"CategoryID\": {{catalog_category_id}},\n  \"SupplierID\": {{catalog_supplier_id}},\n  \"ProductName\": \"Postman Product {{catalog_base_id}} (Updated {{$isoTimestamp}})\",\n  \"Barcode\": \"{{catalog_product_barcode}}\",\n  \"Price\": 135000,\n  \"Unit\": \"crate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "update"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));",
+                  "const req=JSON.parse(pm.variables.replaceIn(pm.request.body.raw));pm.environment.set('catalog_product_name',req.ProductName);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product - Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/search?name={{catalog_product_name}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "search"],
+              "query": [
+                { "key": "name", "value": "{{catalog_product_name}}" }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));pm.test('Contains product',()=>{if(Array.isArray(res.data)&&res.data.length){pm.expect(res.data[0].ProductName||res.data[0].productName).to.contain(pm.environment.get('catalog_product_name').split(' (')[0]);}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inventory - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"InventoryID\": {{catalog_inventory_id}},\n  \"ProductID\": {{catalog_product_id}},\n  \"Quantity\": {{catalog_inventory_quantity}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/inventories/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inventories", "create"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));",
+                  "const req=JSON.parse(pm.variables.replaceIn(pm.request.body.raw));pm.environment.set('catalog_inventory_id',req.InventoryID);pm.environment.set('catalog_inventory_quantity',req.Quantity);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inventory - Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"InventoryID\": {{catalog_inventory_id}},\n  \"ProductID\": {{catalog_product_id}},\n  \"Quantity\": {{catalog_inventory_quantity}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/inventories/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inventories", "update"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('catalog_inventory_quantity',(Number(pm.environment.get('catalog_inventory_quantity'))||25)+5);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "const res=pm.response.json();pm.test('Envelope ok',()=>pm.expect(res.status).eq(200));",
+                  "const req=JSON.parse(pm.variables.replaceIn(pm.request.body.raw));pm.environment.set('catalog_inventory_quantity',req.Quantity);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cleanup - Delete Inventory",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/inventories/delete/{{catalog_inventory_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inventories", "delete", "{{catalog_inventory_id}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Delete ok',()=>pm.expect(pm.response.json().status).eq(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cleanup - Delete Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/delete/{{catalog_product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "delete", "{{catalog_product_id}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Delete ok',()=>pm.expect(pm.response.json().status).eq(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cleanup - Delete Category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories/delete/{{catalog_category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "categories", "delete", "{{catalog_category_id}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Delete ok',()=>pm.expect(pm.response.json().status).eq(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cleanup - Delete Supplier",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/delete/{{catalog_supplier_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers", "delete", "{{catalog_supplier_id}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('Delete ok',()=>pm.expect(pm.response.json().status).eq(200));",
+                  "['catalog_base_id','catalog_category_id','catalog_supplier_id','catalog_product_id','catalog_inventory_id','catalog_category_name','catalog_supplier_name','catalog_product_name','catalog_product_barcode','catalog_inventory_quantity'].forEach(k=>pm.environment.unset(k));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

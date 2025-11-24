@@ -24,6 +24,7 @@ import com.bookingcare.clinic.repository.ClinicBranchHealthcheckPackageRepositor
 import com.bookingcare.clinic.repository.ClinicBranchRepository;
 import com.bookingcare.clinic.repository.ClinicRepository;
 import com.bookingcare.clinic.repository.ClinicVerificationRepository;
+import com.bookingcare.clinic.repository.ClinicAccountRepository;
 import com.bookingcare.clinic.security.CurrentUserService;
 
 import java.util.EnumSet;
@@ -56,6 +57,7 @@ public class ClinicService {
     private final ClinicVerificationRepository clinicVerificationRepository;
     private final ExpertiseClient expertiseClient;
     private final ClinicBranchHealthcheckPackageRepository clinicBranchHealthcheckPackageRepository;
+    private final ClinicAccountRepository clinicAccountRepository;
 
     public ClinicService(ClinicRepository clinicRepository,
                          ClinicMapper clinicMapper,
@@ -64,7 +66,8 @@ public class ClinicService {
                          ClinicBranchDoctorRepository clinicBranchDoctorRepository,
                          ClinicVerificationRepository clinicVerificationRepository,
                          ExpertiseClient expertiseClient,
-                         ClinicBranchHealthcheckPackageRepository clinicBranchHealthcheckPackageRepository) {
+                         ClinicBranchHealthcheckPackageRepository clinicBranchHealthcheckPackageRepository,
+                         ClinicAccountRepository clinicAccountRepository) {
         this.clinicRepository = clinicRepository;
         this.clinicMapper = clinicMapper;
         this.currentUserService = currentUserService;
@@ -73,6 +76,7 @@ public class ClinicService {
         this.clinicVerificationRepository = clinicVerificationRepository;
         this.expertiseClient = expertiseClient;
         this.clinicBranchHealthcheckPackageRepository = clinicBranchHealthcheckPackageRepository;
+        this.clinicAccountRepository = clinicAccountRepository;
     }
 
     // Returns all approved clinics matching optional search criteria.
@@ -626,6 +630,26 @@ public class ClinicService {
                 .collect(Collectors.toList());
     }
 
-
+    // Get clinic info for authenticated clinic admin user
+    // Extracts accountId from JWT token and finds associated clinic
+    @Transactional(readOnly = true)
+    public ClinicResponseDTO getClinicForAdmin() {
+        // Get current user's account ID from JWT token
+        String accountId = currentUserService.requireCurrentUserId();
+        
+        // Find clinic account mapping
+        var clinicAccount = clinicAccountRepository.findByAccountIdAndIsDeletedFalse(accountId)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.CLINIC_NOT_FOUND,
+                        "Clinic not found for account: " + accountId
+                ));
+        
+        // Get clinic by clinicId from mapping
+        var clinic = clinicRepository.findById(clinicAccount.getClinicId())
+                .orElseThrow(() -> new ApiException(ErrorCode.CLINIC_NOT_FOUND));
+        
+        // Map to response DTO
+        return clinicMapper.toClinicResponseDTO(clinic);
+    }
 
 }

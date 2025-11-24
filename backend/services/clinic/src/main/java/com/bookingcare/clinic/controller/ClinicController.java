@@ -38,6 +38,17 @@ public class ClinicController {
         this.clinicService = clinicService;
     }
 
+    //========================================== CLINIC ADMIN =========================================//
+
+    // Clinic Admin endpoint: get clinic info for authenticated clinic admin user
+    // Extracts accountId from JWT token and finds associated clinic
+    @GetMapping("/clinic-admin/")
+    public ResponseEntity<ClinicResponseDTO> getClinicForAdmin() {
+        ClinicResponseDTO clinic = clinicService.getClinicForAdmin();
+        return ResponseEntity.ok(clinic);
+    }
+
+
     //========================================== PUBLIC =========================================//
     
 
@@ -289,6 +300,7 @@ public class ClinicController {
         ClinicResponseDTO clinic = clinicService.restoreClinic(clinicId);
         return ResponseEntity.ok(clinic);
     }
+
 
 
 

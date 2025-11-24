@@ -195,14 +195,22 @@ public class ScheduleControllerPatient {
             return new ApiResponse<>(400, "Invalid schedule hold ID or booking ID", null);
         }
 
-        Boolean isSuccess = _scheduleApplicationService.expiredHoldScheduleForBooking(scheduleHoldId, bookingId);
+        try {
+            Boolean isSuccess = _scheduleApplicationService.expiredHoldScheduleForBooking(scheduleHoldId, bookingId);
 
-        if (!isSuccess) {
-            log.error("Failed to expire hold for schedule hold ID: {}", scheduleHoldId);
-            return new ApiResponse<>(500, "Failed to expire hold", null);
+            if (!isSuccess) {
+                log.error("Failed to expire hold for schedule hold ID: {}", scheduleHoldId);
+                return new ApiResponse<>(500, "Failed to expire hold", null);
+            }
+
+            return new ApiResponse<>(200, "Hold expired successfully", null);
+        } catch (RuntimeException e) {
+            log.error("Error expiring hold: {}", e.getMessage());
+            return new ApiResponse<>(400, e.getMessage(), null);
+        } catch (Exception e) {
+            log.error("Unexpected error expiring hold: {}", e.getMessage());
+            return new ApiResponse<>(500, "Internal server error", null);
         }
-
-        return new ApiResponse<>(200, "Hold expired successfully", null);
     }
 
     /**

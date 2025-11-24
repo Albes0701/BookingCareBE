@@ -1,0 +1,412 @@
+{
+  "info": {
+    "name": "BookingService API",
+    "description": "Complete API test suite for Booking Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.accessToken) {",
+                  "        pm.environment.set('access_token', jsonData.data.accessToken);",
+                  "        console.log('Access token saved for Patient');",
+                  "    }",
+                  "} else {",
+                  "    console.log('Login failed. Status: ' + pm.response.code);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"quyhung\", \"password\": \"123456\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{auth_base_url}}/login",
+              "host": [
+                "{{auth_base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login - Clinic Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.accessToken) {",
+                  "        pm.environment.set('access_token', jsonData.data.accessToken);",
+                  "        console.log('Access token saved for Clinic Admin');",
+                  "    }",
+                  "} else {",
+                  "    console.log('Login failed. Status: ' + pm.response.code);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"tran.chien.admin\", \"password\": \"123456\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{auth_base_url}}/login",
+              "host": [
+                "{{auth_base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking - Query",
+      "item": [
+        {
+          "name": "Test Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{booking_base_url}}/test",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "test"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Bookings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.length > 0) {",
+                  "        pm.environment.set('booking_id', jsonData.data[0].id);",
+                  "        pm.environment.set('patient_id', jsonData.data[0].patientName);",
+                  "        console.log('First booking ID saved: ' + jsonData.data[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{booking_base_url}}/get-all-orders",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "get-all-orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Booking Detail by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{booking_base_url}}/{{booking_id}}",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "{{booking_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings by Patient ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{booking_base_url}}/patient/{{patient_id}}",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "patient",
+                "{{patient_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings by Clinic ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{booking_base_url}}/clinic/{{clinic_id}}",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "clinic",
+                "{{clinic_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking - Create & Update",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate random patient data for unique bookings",
+                  "var timestamp = new Date().getTime();",
+                  "pm.environment.set('random_suffix', Math.floor(Math.random() * 10000));",
+                  "",
+                  "// Calculate birth date (30 years old)",
+                  "var birthDate = new Date();",
+                  "birthDate.setFullYear(birthDate.getFullYear() - 30);",
+                  "var birthDateStr = birthDate.toISOString().split('T')[0];",
+                  "pm.environment.set('patient_birth_date', birthDateStr);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.bookingId) {",
+                  "        pm.environment.set('created_booking_id', jsonData.data.bookingId);",
+                  "        console.log('Booking created with ID: ' + jsonData.data.bookingId);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingFor\": \"self\",\n  \"patientRelativeName\": \"Nguyễn Văn A\",\n  \"patientRelativePhone\": \"0987654321\",\n  \"patientId\": \"PA{{random_suffix}}\",\n  \"patientName\": \"Nguyễn Văn A\",\n  \"patientPhone\": \"0987654321\",\n  \"patientEmail\": \"patient{{random_suffix}}@example.com\",\n  \"patientBirthDate\": \"{{patient_birth_date}}\",\n  \"patientGender\": \"male\",\n  \"patientAddress\": \"273 An Dương Vương, Phường 3, Quận 5, TP.HCM\",\n  \"bookingReason\": \"Khám sức khỏe định kỳ\",\n  \"clinicBranchId\": \"{{clinic_branch_id}}\",\n  \"bookingPackageId\": \"{{booking_package_id}}\",\n  \"packageScheduleId\": \"{{package_schedule_id}}\",\n  \"purchaseMethod\": \"DIRECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{booking_base_url}}/submit-booking",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "submit-booking"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Booking Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{created_booking_id}}\",\n  \"status\": \"COMPLETED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{booking_base_url}}/update-booking-status",
+              "host": [
+                "{{booking_base_url}}"
+              ],
+              "path": [
+                "update-booking-status"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8222",
+      "type": "string"
+    },
+    {
+      "key": "auth_base_url",
+      "value": "http://localhost:8222/api/v1/account/auth",
+      "type": "string"
+    },
+    {
+      "key": "booking_base_url",
+      "value": "http://localhost:8222/api/v1/booking",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "existing_booking_id_here",
+      "type": "string"
+    },
+    {
+      "key": "clinic_id",
+      "value": "existing_clinic_id_here",
+      "type": "string"
+    },
+    {
+      "key": "clinic_branch_id",
+      "value": "existing_clinic_branch_id_here",
+      "type": "string"
+    },
+    {
+      "key": "booking_package_id",
+      "value": "existing_booking_package_id_here",
+      "type": "string"
+    },
+    {
+      "key": "package_schedule_id",
+      "value": "existing_package_schedule_id_here",
+      "type": "string"
+    },
+    {
+      "key": "patient_id",
+      "value": "existing_patient_id_here",
+      "type": "string"
+    },
+    {
+      "key": "created_booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "random_suffix",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patient_birth_date",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

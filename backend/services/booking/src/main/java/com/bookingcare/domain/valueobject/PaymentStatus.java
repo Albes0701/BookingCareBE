@@ -1,4 +1,4 @@
-﻿package com.bookingcare.domain.valueobject;
+package com.bookingcare.domain.valueobject;
 
 import com.bookingcare.domain.exception.BookingDomainException;
 

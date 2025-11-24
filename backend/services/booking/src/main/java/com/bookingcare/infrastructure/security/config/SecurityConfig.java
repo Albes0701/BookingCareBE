@@ -35,12 +35,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(gatewayAuthenticationFilter, BasicAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/expertise/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/expertise/internal/**").hasRole("DOCTOR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/expertise/doctors/by-user/{userId}").hasRole("DOCTOR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/expertise/doctors/by-user/{userId}/profile").hasRole("DOCTOR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/expertise").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/expertise/*").permitAll()
                         .anyRequest().authenticated()
                 );
 

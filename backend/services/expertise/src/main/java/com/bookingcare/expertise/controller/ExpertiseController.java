@@ -24,11 +24,11 @@ import com.bookingcare.expertise.dto.DoctorCredentialRequestDTO;
 import com.bookingcare.expertise.dto.DoctorCredentialWithFilesResponseDTO;
 import com.bookingcare.expertise.dto.DoctorProfileResponseDTO;
 import com.bookingcare.expertise.dto.DoctorsRequestDTO;
+import com.bookingcare.expertise.dto.DoctorsResponseDTO;
 import com.bookingcare.expertise.dto.SpecialtiesResponseDTO;
 import com.bookingcare.expertise.service.ExpertiseService;
 
 import jakarta.validation.Valid;
-import main.java.com.bookingcare.shared.dto.expertise.DoctorsResponseDTO;
 
 @RestController
 @RequestMapping("/api/v1/expertise")

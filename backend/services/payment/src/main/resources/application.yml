@@ -8,3 +8,9 @@ payos:
   client-id: "d46307b1-d1b4-4ead-b366-13b58d7ed92d"
   api-key: "e58fcadd-6fb4-4961-b794-028b78b7b939"
   checksum-key: "da90081942787173181a14d19e1f18979691e1abdc1a692e9327c15c79962e7b"
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG

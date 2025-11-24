@@ -1,4 +1,4 @@
-﻿package com.bookingcare.payment.dto.event;
+package com.bookingcare.payment.dto.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -3,7 +3,6 @@ package com.bookingcare.expertise.mapper;
 import com.bookingcare.expertise.dto.*;
 import com.bookingcare.expertise.entity.*;
 
-import main.java.com.bookingcare.shared.dto.expertise.DoctorsResponseDTO;
 
 import org.springframework.stereotype.Component;
 

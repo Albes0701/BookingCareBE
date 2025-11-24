@@ -197,8 +197,7 @@ services:
 
   expertise-service:
     build:
-      context: .
-      dockerfile: ./services/expertise/Dockerfile
+      context: ./services/expertise
     container_name: bookingcare_expertise-service
     environment:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
@@ -368,7 +367,7 @@ services:
 
   # 1. Zookeeper (Bắt buộc phải có để Kafka chạy được)
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.6.1
     container_name: booking-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -380,7 +379,7 @@ services:
 
   # 2. Kafka Broker (Server chính)
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.6.1
     container_name: booking-kafka
     depends_on:
       - zookeeper

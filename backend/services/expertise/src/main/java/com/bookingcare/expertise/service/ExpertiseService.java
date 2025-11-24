@@ -18,6 +18,7 @@ import com.bookingcare.expertise.dto.DoctorCredentialRequestDTO;
 import com.bookingcare.expertise.dto.DoctorCredentialWithFilesResponseDTO;
 import com.bookingcare.expertise.dto.DoctorProfileResponseDTO;
 import com.bookingcare.expertise.dto.DoctorsRequestDTO;
+import com.bookingcare.expertise.dto.DoctorsResponseDTO;
 import com.bookingcare.expertise.dto.SpecialtiesResponseDTO;
 import com.bookingcare.expertise.entity.CredentialStatus;
 import com.bookingcare.expertise.entity.CredentialType;
@@ -41,7 +42,6 @@ import com.bookingcare.expertise.repository.DoctorsRepo;
 import com.bookingcare.expertise.repository.SpecialtyRepo;
 import org.springframework.util.StringUtils;
 
-import main.java.com.bookingcare.shared.dto.expertise.DoctorsResponseDTO;
 
 @Service
 public class ExpertiseService {

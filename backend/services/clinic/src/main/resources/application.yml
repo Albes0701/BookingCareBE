@@ -5,3 +5,8 @@ spring:
 
   application:
     name: clinic-service
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG

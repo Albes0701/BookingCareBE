@@ -75,10 +75,10 @@ public class HealthCheckPackageScheduleBookingDetailJpaEntity {
   private PurchaseMethod purchaseMethod;
 
   @CreatedDate
-  @Column(nullable = false, updatable = false)
+  @Column(name = "created_date", nullable = false, updatable = false)
   private ZonedDateTime createdDate;
 
   @LastModifiedDate
-  @Column(nullable = false)
+  @Column(name = "updated_date")
   private ZonedDateTime updatedDate;
 }

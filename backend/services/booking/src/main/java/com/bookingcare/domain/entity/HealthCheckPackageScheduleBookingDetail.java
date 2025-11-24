@@ -26,13 +26,17 @@ public class HealthCheckPackageScheduleBookingDetail {
   private String bookingPackageId;
   private String bookingReason;
   private String clinicId;
+  private String doctorId;
   private BookingStatus bookingStatus;
   private PurchaseMethod purchaseMethod;
+  
   private ZonedDateTime createdDate;
   private ZonedDateTime updatedDate;
 
-  private HealthCheckPackageSchedule packageSchedule;
+  // Relationships
   private BookingPackage bookingPackage;
+  private BookingPackageDetail bookingPackageDetail;
+  private BookingSagaState sagaState;  // Reference to saga orchestration state
 
   public String generateId() {
     try {
@@ -62,5 +66,34 @@ public class HealthCheckPackageScheduleBookingDetail {
   public void initialize() {
     this.id = generateId();
     this.bookingStatus = BookingStatus.PENDING;
+    this.createdDate = ZonedDateTime.now();
+    this.updatedDate = ZonedDateTime.now();
+  }
+  
+  // Saga state transition methods
+  public void confirmHoldSchedule(String scheduleHoldId, ZonedDateTime holdExpireAt) {
+    this.bookingStatus = BookingStatus.PENDING_PAYMENT;
+    this.updatedDate = ZonedDateTime.now();
+    // Saga state is updated separately in BookingSagaState entity
+  }
+  
+  public void failHoldSchedule() {
+    this.bookingStatus = BookingStatus.REJECTED_NO_SLOT;
+    this.updatedDate = ZonedDateTime.now();
+  }
+  
+  public void confirmPayment() {
+    this.updatedDate = ZonedDateTime.now();
+    // Payment status is tracked in BookingSagaState entity
+  }
+  
+  public void failPayment() {
+    this.bookingStatus = BookingStatus.CANCELLED;
+    this.updatedDate = ZonedDateTime.now();
+  }
+  
+  public void confirmBooking() {
+    this.bookingStatus = BookingStatus.CONFIRMED;
+    this.updatedDate = ZonedDateTime.now();
   }
 }

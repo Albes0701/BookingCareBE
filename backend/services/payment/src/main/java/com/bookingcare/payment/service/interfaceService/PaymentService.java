@@ -21,4 +21,12 @@ public interface PaymentService {
     CreatePaymentLinkResponse createPaymentLink(CreatePaymentLinkRequestBody requestBody) throws Exception;
     void UpdatePaymentStatusByWebhook(WebhookData data);
 
+    // ...existing methods...
+
+    /**
+     * Get payment by order code (từ webhook)
+     */
+    PaymentResponseDTO GetPaymentByOrderCodeAsync(long orderCode);
+
+
 }

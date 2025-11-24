@@ -27,11 +27,11 @@ spring:
 eureka:
   client:
     service-url:
-     defaultZone: http://discovery-service:8761/eurekaDoctorCredentialRepo
+     defaultZone: http://discovery-service:8761/eureka/
       # defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
 
 application:
   config:
-    expertise-url: http://localhost:8222/api/v1/expertise
+    expertise-url: http://api-gateway:8222/api/v1/expertise

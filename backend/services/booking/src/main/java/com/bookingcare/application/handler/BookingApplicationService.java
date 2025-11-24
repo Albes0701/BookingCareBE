@@ -5,19 +5,19 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.bookingcare.application.dto.ApiResponse;
 import com.bookingcare.application.dto.CreateBookingCommand;
 import com.bookingcare.application.dto.QueryBookingOrderDetailInfoResponse;
 import com.bookingcare.application.dto.QueryOrdersResponse;
 import com.bookingcare.application.dto.QueryPackageScheduleResponse;
+import com.bookingcare.application.dto.event.BookingCreatedEvent;
 import com.bookingcare.application.mapper.BookingMapperApplication;
 import com.bookingcare.application.ports.input.IBookingApplicationService;
 import com.bookingcare.application.ports.output.IBookingRepository;
 import com.bookingcare.application.ports.output.IHealthCheckPackageScheduleBookingDetailRepository;
 import com.bookingcare.application.ports.output.IScheduleFeignClientService;
+import com.bookingcare.application.saga.BookingEventPublisher;
 import com.bookingcare.domain.entity.BookingPackageDetail;
 import com.bookingcare.domain.entity.HealthCheckPackageScheduleBookingDetail;
-import com.bookingcare.domain.exception.BookingDomainException;
 import com.bookingcare.domain.valueobject.BookingStatus;
 
 import jakarta.transaction.Transactional;
@@ -32,6 +32,9 @@ public class BookingApplicationService implements IBookingApplicationService {
     private final IBookingRepository _bookingRepository;
     private final IHealthCheckPackageScheduleBookingDetailRepository _healthCheckPackageScheduleBookingDetailRepository;
     private final IScheduleFeignClientService _scheduleFeignClientService;
+    private final BookingEventPublisher eventPublisher;
+
+
 
     @Override
     public QueryBookingOrderDetailInfoResponse getBookingsOrderDetailInfo(String id) {
@@ -74,52 +77,36 @@ public class BookingApplicationService implements IBookingApplicationService {
         }
     }
 
+
     @Override
     @Transactional
-    public String createBooking(CreateBookingCommand command) {
-        try {
-            HealthCheckPackageScheduleBookingDetail orderDetail = bookingMapper.toEntity(command);
+    public String createBooking(CreateBookingCommand cmd) {
+        // 1. Create and save booking
+        HealthCheckPackageScheduleBookingDetail booking = bookingMapper.toEntity(cmd);
+        booking.initialize(); // Set PENDING status, generate ID
+        
+        HealthCheckPackageScheduleBookingDetail savedBooking = _healthCheckPackageScheduleBookingDetailRepository.save(booking);
 
-            validateOrderReferences(orderDetail);
+        log.info("Booking created: id={}, status={}", 
+                savedBooking.getId(), savedBooking.getBookingStatus());
 
-            orderDetail.initialize();
+        // 2. Generate correlation ID for distributed tracing
+        String correlationId = java.util.UUID.randomUUID().toString();
+        
+        log.info("Saga initiated: bookingId={}, correlationId={}", 
+                savedBooking.getId(), correlationId);
 
-            log.info("Order after initialization and validation: {}", orderDetail);
+        // 3. Publish BookingCreatedEvent (Step 2 of saga flow)
+        BookingCreatedEvent event = BookingCreatedEvent.builder()
+                .bookingId(savedBooking.getId())
+                .packageScheduleId(savedBooking.getPackageScheduleId())
+                .patientId(savedBooking.getPatientId())
+                .clinicId(savedBooking.getClinicId())
+                .build();
 
-            HealthCheckPackageScheduleBookingDetail savedOrder = _healthCheckPackageScheduleBookingDetailRepository
-                    .save(orderDetail);
-            return savedOrder.getId();
-        } catch (Exception e) {
-            log.error("Error creating booking: {}", e.getMessage());
-            throw e;
-        }
-    }
+        eventPublisher.publishBookingCreatedEvent(event, correlationId);
 
-    private void validateOrderReferences(HealthCheckPackageScheduleBookingDetail order) {
-        String packageScheduleId = order.getPackageScheduleId();
-        try {
-            ApiResponse<Optional<QueryPackageScheduleResponse>> response = _scheduleFeignClientService
-                    .getPackageScheduleById(packageScheduleId);
-
-            if (response.getStatus() == 404 || response.getData().isEmpty()) {
-                log.error("Package schedule not found: {}", packageScheduleId);
-                throw new BookingDomainException("Package schedule not found: " + packageScheduleId);
-            }
-
-            Optional<BookingPackageDetail> packageDetail = _bookingRepository
-                    .findById(order.getBookingPackageId(),
-                            response.getData().get().packageId());
-
-            if (packageDetail.isEmpty()) {
-                log.error("Booking package detail not found for package: {} and schedule: {}",
-                        order.getBookingPackageId(), response.getData().get().packageId());
-                throw new BookingDomainException("Booking package detail not found");
-            }
-
-        } catch (Exception e) {
-            log.error("Failed to validate package schedule: {}", packageScheduleId, e);
-            throw new BookingDomainException("Unable to validate package schedule: " + e.getMessage());
-        }
+        return savedBooking.getId();
     }
 
     @Override
@@ -190,4 +177,10 @@ public class BookingApplicationService implements IBookingApplicationService {
             throw e;
         }
     }
+
+
+
+
+
+
 }

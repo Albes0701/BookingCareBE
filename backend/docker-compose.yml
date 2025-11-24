@@ -366,9 +366,56 @@ services:
           path: ./services/schedule/pom.xml
     restart: unless-stopped
 
+  # 1. Zookeeper (Bắt buộc phải có để Kafka chạy được)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: booking-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - microservices-net
+
+  # 2. Kafka Broker (Server chính)
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: booking-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092" # Port này để Spring Boot kết nối vào
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Cấu hình để kết nối từ ngoài (máy host) và trong (docker network)
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - microservices-net
+  
+  # 3. Kafka UI (Giao diện web để xem topic/message)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: booking-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080" # Truy cập web tại http://localhost:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - microservices-net
+
 networks:
   microservices-net:
     driver: bridge
+  
 
 volumes:
   postgres:

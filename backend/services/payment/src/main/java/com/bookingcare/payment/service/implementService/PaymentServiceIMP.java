@@ -208,4 +208,20 @@ public class PaymentServiceIMP implements PaymentService {
             log.warn("Webhook received with non-success status: {}", data.getDesc());
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)  // ✅ Thêm annotation
+    public PaymentResponseDTO GetPaymentByOrderCodeAsync(long orderCode) {
+        log.info("Fetching payment with orderCode: {}", orderCode);
+
+        // 1. Tìm payment bằng orderCode trong DB
+        Payment payment = paymentRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new RuntimeException("Payment not found with orderCode: " + orderCode));
+
+        log.info("Found payment: id={}, bookingId={}, status={}", 
+                payment.getId(), payment.getBookingId(), payment.getStatus());
+
+        // 2. Dùng mapper để chuyển Entity sang DTO và trả về
+        return PaymentMapper.toPaymentResponse(payment);
+    }
 }

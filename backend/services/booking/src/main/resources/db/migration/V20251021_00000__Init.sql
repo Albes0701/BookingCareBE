@@ -48,3 +48,7 @@ REFERENCES booking_packages(id);
 -- Composite index for faster queries by package_id + schedule_date
 CREATE INDEX idx_patient_id ON health_check_package_schedule_booking_details (patient_id);
 CREATE INDEX idx_clinic_id ON health_check_package_schedule_booking_details (clinic_id);
+
+ALTER TABLE health_check_package_schedule_booking_details
+ADD COLUMN created_date TIMESTAMP NULL,
+ADD COLUMN updated_date TIMESTAMP NULL;

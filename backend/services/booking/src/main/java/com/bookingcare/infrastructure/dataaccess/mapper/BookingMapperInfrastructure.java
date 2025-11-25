@@ -47,6 +47,8 @@ public class BookingMapperInfrastructure {
                 .clinicId(domain.getClinicId())
                 .bookingStatus(domain.getBookingStatus())
                 .purchaseMethod(domain.getPurchaseMethod())
+                .paymentUrl(domain.getPaymentUrl())
+                .orderCode(domain.getOrderCode())
                 .build();
     }
 
@@ -71,6 +73,8 @@ public class BookingMapperInfrastructure {
                 .createdDate(entity.getCreatedDate())
                 .updatedDate(entity.getUpdatedDate())
                 .bookingPackage(toDomain(entity.getBookingPackage()))
+                .paymentUrl(entity.getPaymentUrl())
+                .orderCode(entity.getOrderCode())
                 .build();
     }
 

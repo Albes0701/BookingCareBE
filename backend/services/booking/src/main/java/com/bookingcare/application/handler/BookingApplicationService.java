@@ -1,6 +1,7 @@
 package com.bookingcare.application.handler;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -179,6 +180,47 @@ public class BookingApplicationService implements IBookingApplicationService {
     }
 
 
+    @Override
+    public Map<String, Object> getPaymentUrl(String bookingId) {
+        try {
+            Optional<HealthCheckPackageScheduleBookingDetail> bookingOptional = 
+                    _healthCheckPackageScheduleBookingDetailRepository.findById(bookingId);
+            
+            if (bookingOptional.isEmpty()) {
+                return Map.of(
+                        "status", "ERROR",
+                        "message", "Booking not found"
+                );
+            }
+            
+            HealthCheckPackageScheduleBookingDetail booking = bookingOptional.get();
+            
+            // ✅ Chưa có paymentUrl → Đang xử lý
+            if (booking.getPaymentUrl() == null) {
+                return Map.of(
+                        "status", "PENDING",
+                        "message", "Payment link is being generated...",
+                        "bookingStatus", booking.getBookingStatus().toString()
+                );
+            }
+            
+            // ✅ Đã có paymentUrl → Sẵn sàng
+            return Map.of(
+                    "status", "READY",
+                    "paymentUrl", booking.getPaymentUrl(),
+                    "orderCode", booking.getOrderCode(),
+                    "bookingStatus", booking.getBookingStatus().toString(),
+                    "message", "Payment link ready. Redirect user to paymentUrl."
+            );
+            
+        } catch (Exception e) {
+            log.error("Error getting payment URL for bookingId: {}", bookingId, e);
+            return Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage()
+            );
+        }
+    }
 
 
 

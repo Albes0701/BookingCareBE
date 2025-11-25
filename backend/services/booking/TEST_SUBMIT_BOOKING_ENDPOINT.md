@@ -56,6 +56,10 @@ docker exec booking-kafka kafka-topics --create --topic schedule-commands --boot
 docker exec booking-kafka kafka-topics --create --topic payment-events --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 ```
 
+**Note:** 
+- ✅ Services config: `kafka:29092` (internal Docker network)
+- ✅ Terminal commands từ host: `localhost:9092` (exposed port)
+
 ---
 
 ## 🔐 BƯỚC 2: LẤY ACCESS TOKEN
@@ -563,21 +567,39 @@ docker compose restart booking-service schedule-service payment-service
 ERROR: Connection to node -1 (kafka/172.18.0.5:29092) could not be established
 ```
 
-**Cause:** Service config vẫn dùng `localhost:9092` thay vì `kafka:29092`
+**Cause:** Service không thể kết nối tới Kafka
 
 **Solution:**
-1. Check `booking-service.yml`:
+1. Verify Kafka config (đã được set đúng):
 ```yaml
+# booking-service.yml, schedule-service.yml, payment-service.yml
 spring:
   kafka:
-    bootstrap-servers: kafka:29092  # PHẢI là kafka:29092, KHÔNG phải localhost:9092
+    bootstrap-servers: kafka:29092  # ✅ ĐÃ ĐÚNG - Dùng cho Docker Compose
+    # KHÔNG dùng localhost:9092 khi chạy trong Docker
 ```
 
-2. Restart config-server và services:
+2. Check Kafka container:
+```powershell
+docker ps | Select-String "kafka"
+# Expected: booking-kafka container đang chạy
+```
+
+3. Test Kafka connectivity từ trong container:
+```powershell
+docker exec booking-service ping -c 3 kafka
+# Expected: Ping thành công
+```
+
+4. Restart services nếu cần:
 ```powershell
 docker compose restart config-server
 docker compose restart booking-service schedule-service payment-service
 ```
+
+**Note:** 
+- `kafka:29092` - Dùng cho services trong Docker Compose ✅
+- `localhost:9092` - Chỉ dùng khi test từ host machine (Postman, terminal)
 
 ---
 
@@ -696,6 +718,47 @@ artillery run artillery-test.yml
 - **Verification Report:** `backend/services/booking/SAGA_VERIFICATION_REPORT.md`
 - **Test Script:** `backend/test-saga-flow.ps1`
 - **Postman Collection:** `backend/services/booking/BookingService-API.postman_collection.json`
+
+## 🔧 KAFKA CONFIGURATION
+
+**Service Configuration (Docker Compose):**
+```yaml
+# booking-service.yml
+spring:
+  kafka:
+    bootstrap-servers: kafka:29092  # ✅ Internal Docker network
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# schedule-service.yml - Same config
+# payment-service.yml - Same config
+```
+
+**Kafka Port Mapping:**
+```yaml
+# docker-compose.yml
+kafka:
+  ports:
+    - "9092:9092"     # External (từ host machine - Postman, terminal)
+    - "29092:29092"   # Internal (giữa các Docker containers)
+  environment:
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+```
+
+**Khi nào dùng gì:**
+| Scenario | Kafka Address | Usage |
+|----------|---------------|-------|
+| Services trong Docker Compose | `kafka:29092` | ✅ Booking, Schedule, Payment services |
+| Terminal commands từ host | `localhost:9092` | ✅ kafka-topics, kafka-console-consumer |
+| Kafka UI trong Docker | `kafka:29092` | ✅ Nếu UI cũng trong compose |
+| Test từ IDE/Postman trên host | `localhost:9092` | ✅ Local development |
 
 ---
 

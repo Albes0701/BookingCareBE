@@ -404,7 +404,7 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8080:8080" # Truy cập web tại http://localhost:8080
+      - "9000:8080" # Truy cập web tại http://localhost:9000
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092

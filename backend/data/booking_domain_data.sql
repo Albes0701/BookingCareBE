@@ -28,6 +28,11 @@ INSERT INTO booking_packages (id, name, is_deleted) VALUES
 ('PKG020', 'Gói khám da liễu chuyên sâu', FALSE);
 
 
+
+INSERT INTO patients (patient_id, user_id) VALUES
+('patient-123','f8c3e9d2-4b7a-4d9e-8f2c-5a9b1c3d4e5f');
+
+
 INSERT INTO booking_packages_details (package_id, booking_package_id, price, description) VALUES
 ('7b6c7747-43ad-4895-90e6-47d4ccf58feb', 'PKG001', 1540000, 'Chuyên gia gói khám sức khỏe tổng quát cơ bản - Nội Soi Dạ Dày Không Đau - Endo Clinic'),
 ('7b6c7747-43ad-4895-90e6-47d4ccf58feb', 'PKG009', 6080000, 'Nội Soi Dạ Dày Không Đau - Endo Clinic kết hợp Gói khám thận - tiết niệu'),

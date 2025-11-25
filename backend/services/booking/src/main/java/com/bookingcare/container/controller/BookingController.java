@@ -88,4 +88,24 @@ public class BookingController {
         String message = isUpdated ? "Booking status updated successfully" : "Failed to update booking status";
         return new ApiResponse<>(200, message, null);
     }
+
+   /**
+     * ✅ Get payment URL for QR code
+     * Frontend polls this endpoint after creating booking
+    */
+    @GetMapping("/{bookingId}/payment-url")
+    public ApiResponse<Map<String, Object>> getPaymentUrl(@PathVariable String bookingId) {
+        log.info("Fetching payment URL for booking: {}", bookingId);
+        
+        Map<String, Object> result = _bookingApplicationService.getPaymentUrl(bookingId);
+        
+        String status = (String) result.get("status");
+        int httpStatus = "ERROR".equals(status) ? 500 : 200;
+        String message = (String) result.get("message");
+        
+        return new ApiResponse<>(httpStatus, message, result);
+    }
+
+
+
 }

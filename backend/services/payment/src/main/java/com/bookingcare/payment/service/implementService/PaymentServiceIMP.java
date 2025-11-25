@@ -30,17 +30,17 @@ import java.util.stream.Collectors;
 public class PaymentServiceIMP implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PayOS payOS;
-    @Override
-    public PaymentResponseDTO CreatePaymentAsync(PaymentRequestCreate requestDTO){
-        log.info("Creating payment with order code: {}", requestDTO);
-        // 1. Chuyển đổi DTO (input) sang Entity
-        Payment newPayment = PaymentMapper.toPayment(requestDTO);
-        log.info("Converted PaymentRequestCreate to Payment entity: {}", newPayment);
-        // 2. Lưu Entity vào database
-        Payment savedPayment = paymentRepository.save(newPayment);
-        // 3. Chuyển đổi Entity (đã lưu) sang DTO (output)
-        return PaymentMapper.toPaymentResponse(savedPayment);
-    }
+    // @Override
+    // public PaymentResponseDTO CreatePaymentAsync(PaymentRequestCreate requestDTO){
+    //     log.info("Creating payment with order code: {}", requestDTO);
+    //     // 1. Chuyển đổi DTO (input) sang Entity
+    //     Payment newPayment = PaymentMapper.toPayment(requestDTO);
+    //     log.info("Converted PaymentRequestCreate to Payment entity: {}", newPayment);
+    //     // 2. Lưu Entity vào database
+    //     Payment savedPayment = paymentRepository.save(newPayment);
+    //     // 3. Chuyển đổi Entity (đã lưu) sang DTO (output)
+    //     return PaymentMapper.toPaymentResponse(savedPayment);
+    // }
 
     @Override
     @Transactional(readOnly = true)

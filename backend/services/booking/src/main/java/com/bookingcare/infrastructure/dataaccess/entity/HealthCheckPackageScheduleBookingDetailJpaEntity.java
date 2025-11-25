@@ -74,6 +74,12 @@ public class HealthCheckPackageScheduleBookingDetailJpaEntity {
   @Enumerated(EnumType.STRING)
   private PurchaseMethod purchaseMethod;
 
+  @Column(name = "payment_url", length = 500)
+  private String paymentUrl; // ✅ THÊM field này
+  
+  @Column(name = "order_code")
+  private Long orderCode; // ✅ THÊM field này
+
   @CreatedDate
   @Column(name = "created_date", nullable = false, updatable = false)
   private ZonedDateTime createdDate;

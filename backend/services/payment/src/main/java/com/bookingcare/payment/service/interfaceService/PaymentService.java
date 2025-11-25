@@ -14,7 +14,7 @@ import vn.payos.model.webhooks.WebhookData;
 public interface PaymentService {
     List<PaymentResponseDTO> GetAllPaymentsAsync();
     PaymentResponseDTO GetPaymentByIdAsync(String paymentId);
-    PaymentResponseDTO CreatePaymentAsync(PaymentRequestCreate paymentRequestCreate);
+    // PaymentResponseDTO CreatePaymentAsync(PaymentRequestCreate paymentRequestCreate);
     PaymentResponseDTO UpdatePaymentAsync(String id, PaymentStatusUpdateRequest request);
     PaymentResponseDTO GetPaymentByBookingIdAsync(String bookingId);
     // thanh toán online

@@ -22,12 +22,12 @@ import java.util.List;
 public class PaymentController {
     private final PaymentService paymentService;
 
-    @PostMapping
-    public ResponseEntity<PaymentResponseDTO> create(@RequestBody PaymentRequestCreate request) {
-        // Chỉ cần gọi hàm từ interface
-        PaymentResponseDTO response = paymentService.CreatePaymentAsync(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+    // @PostMapping
+    // public ResponseEntity<PaymentResponseDTO> create(@RequestBody PaymentRequestCreate request) {
+    //     // Chỉ cần gọi hàm từ interface
+    //     PaymentResponseDTO response = paymentService.CreatePaymentAsync(request);
+    //     return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    // }
     @GetMapping
     public ResponseEntity<List<PaymentResponseDTO>> getAllPayments() {
         // 1. Gọi service để lấy danh sách

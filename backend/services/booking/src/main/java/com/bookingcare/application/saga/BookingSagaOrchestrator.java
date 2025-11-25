@@ -6,6 +6,9 @@ import com.bookingcare.domain.entity.HealthCheckPackageScheduleBookingDetail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.math.BigDecimal;
+
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +58,11 @@ public class BookingSagaOrchestrator {
             // Load booking
             HealthCheckPackageScheduleBookingDetail booking = bookingRepository
                     .findById(event.getBookingId())
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + event.getBookingId()));
+                    .orElse(null);
+            if (booking == null) {
+                log.warn("Booking not found for HoldSlotSucceededEvent: bookingId={}", event.getBookingId());
+                return;
+            }
 
             // Update booking state
             booking.confirmHoldSchedule(event.getScheduleHoldId(), event.getHoldExpireAt());
@@ -68,15 +75,21 @@ public class BookingSagaOrchestrator {
             PaymentRequestedEvent paymentEvent = PaymentRequestedEvent.builder()
                     .bookingId(booking.getId())
                     .patientId(booking.getPatientId())
-                    .price(booking.getBookingPackageDetail().getPrice())
+                    // .price(booking.getBookingPackage().getBookingPackageDetails().getPrice())
+                    .price(new BigDecimal(10000))
                     .description("Payment for booking " + booking.getId())
                     .build();
 
             eventPublisher.publishPaymentRequestedEvent(paymentEvent, envelope.getCorrelationId());
 
         } catch (Exception e) {
-            log.error("Error handling HoldSlotSucceededEvent", e);
-            throw new RuntimeException(e);
+            log.error("========================================");
+            log.error("❌ Error handling HoldSlotSucceededEvent");
+            log.error("Booking ID: {}", envelope.getAggregateId());
+            log.error("Error: {}", e.getMessage(), e);
+            log.error("========================================");
+
+
         }
     }
 
@@ -86,7 +99,11 @@ public class BookingSagaOrchestrator {
             
             HealthCheckPackageScheduleBookingDetail booking = bookingRepository
                     .findById(bookingId)
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+                    .orElse(null);
+            if (booking == null) {
+                log.warn("Booking not found for HoldSlotFailedEvent: bookingId={}", bookingId);
+                return;
+            }
 
             booking.failHoldSchedule();
             bookingRepository.save(booking);
@@ -100,6 +117,33 @@ public class BookingSagaOrchestrator {
     /**
      * Step 5: Handle PaymentSucceededEvent from Payment Service
      */
+    // @KafkaListener(topics = "payment-events", groupId = "booking-saga-group")
+    // @Transactional
+    // public void handlePaymentEvents(String jsonMessage) {
+    //     try {
+    //         EventEnvelope<?> envelope = objectMapper.readValue(jsonMessage, EventEnvelope.class);
+            
+    //         log.info("Received payment event: type={}, aggregateId={}", 
+    //                 envelope.getEventType(), envelope.getAggregateId());
+
+    //         switch (envelope.getEventType()) {
+    //             case "PaymentSucceededEvent":
+    //                 handlePaymentSucceeded(envelope);
+    //                 break;
+    //             case "PaymentFailedEvent":
+    //                 handlePaymentFailed(envelope);
+    //                 break;
+    //             default:
+    //                 log.warn("Unknown payment event type: {}", envelope.getEventType());
+    //         }
+    //     } catch (Exception e) {
+    //         log.error("Error handling payment event", e);
+    //     }
+    // }
+
+    /**
+     * ✅ NEW: Handle PaymentLinkCreatedEvent from Payment Service
+     */
     @KafkaListener(topics = "payment-events", groupId = "booking-saga-group")
     @Transactional
     public void handlePaymentEvents(String jsonMessage) {
@@ -110,6 +154,9 @@ public class BookingSagaOrchestrator {
                     envelope.getEventType(), envelope.getAggregateId());
 
             switch (envelope.getEventType()) {
+                case "PaymentLinkCreatedEvent":
+                    handlePaymentLinkCreated(envelope);
+                    break;
                 case "PaymentSucceededEvent":
                     handlePaymentSucceeded(envelope);
                     break;
@@ -117,13 +164,14 @@ public class BookingSagaOrchestrator {
                     handlePaymentFailed(envelope);
                     break;
                 default:
-                    log.warn("Unknown payment event type: {}", envelope.getEventType());
+                    log.warn("Unknown event type: {}", envelope.getEventType());
             }
         } catch (Exception e) {
             log.error("Error handling payment event", e);
         }
     }
 
+    @Transactional
     private void handlePaymentSucceeded(EventEnvelope<?> envelope) {
         try {
             PaymentSucceededEvent event = objectMapper.convertValue(
@@ -132,8 +180,11 @@ public class BookingSagaOrchestrator {
             // Load booking
             HealthCheckPackageScheduleBookingDetail booking = bookingRepository
                     .findById(event.getBookingId())
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + event.getBookingId()));
-
+                    .orElse(null);
+            if (booking == null) {
+                log.warn("Booking not found for PaymentSucceededEvent: bookingId={}", event.getBookingId());
+                return;
+            }
             // Update booking: payment completed
             booking.confirmPayment();
             bookingRepository.save(booking);
@@ -160,18 +211,17 @@ public class BookingSagaOrchestrator {
 
         } catch (Exception e) {
             log.error("Error handling PaymentSucceededEvent", e);
-            throw new RuntimeException(e);
         }
     }
 
+    @Transactional
     private void handlePaymentFailed(EventEnvelope<?> envelope) {
         try {
             String bookingId = envelope.getAggregateId();
             
             HealthCheckPackageScheduleBookingDetail booking = bookingRepository
                     .findById(bookingId)
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
-
+                    .orElse(null);
             booking.failPayment();
             bookingRepository.save(booking);
 
@@ -181,4 +231,39 @@ public class BookingSagaOrchestrator {
             log.error("Error handling PaymentFailedEvent", e);
         }
     }
+
+    /**
+     * ✅ NEW: Handle PaymentLinkCreatedEvent
+     */
+    @Transactional
+    private void handlePaymentLinkCreated(EventEnvelope<?> envelope) {
+    try {
+        PaymentLinkCreatedEvent event = objectMapper.convertValue(
+                envelope.getPayload(), PaymentLinkCreatedEvent.class);
+        
+        log.info("✅✅✅ PAYMENT LINK RECEIVED ✅✅✅");
+        log.info("Booking ID: {}", event.getBookingId());
+        log.info("QR Code URL: {}", event.getCheckoutUrl());
+        log.info("Order Code: {}", event.getOrderCode());
+        
+        // ✅ LƯU paymentUrl vào Booking
+        HealthCheckPackageScheduleBookingDetail booking = bookingRepository
+                .findById(event.getBookingId())
+                .orElse(null);
+        if (booking == null) {
+            log.warn("Booking not found for PaymentLinkCreatedEvent: bookingId={}", event.getBookingId());
+            return;
+        }
+        booking.setPaymentUrl(event.getCheckoutUrl());
+        booking.setOrderCode(event.getOrderCode());
+        bookingRepository.save(booking);
+        
+        log.info("✅ Payment URL saved to booking: {}", event.getBookingId());
+        
+        } catch (Exception e) {
+            log.error("Error handling PaymentLinkCreatedEvent", e);
+        }
+    }
+
+    
 }

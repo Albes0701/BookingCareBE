@@ -29,13 +29,15 @@ public class HealthCheckPackageScheduleBookingDetail {
   private String doctorId;
   private BookingStatus bookingStatus;
   private PurchaseMethod purchaseMethod;
+  private String paymentUrl; // ✅ THÊM field này
+  private Long orderCode; // ✅ THÊM field này
+
   
   private ZonedDateTime createdDate;
   private ZonedDateTime updatedDate;
 
   // Relationships
   private BookingPackage bookingPackage;
-  private BookingPackageDetail bookingPackageDetail;
   private BookingSagaState sagaState;  // Reference to saga orchestration state
 
   public String generateId() {
@@ -62,9 +64,10 @@ public class HealthCheckPackageScheduleBookingDetail {
       return java.util.UUID.randomUUID().toString().substring(0, 16);
     }
   }
+  
 
   public void initialize() {
-    this.id = generateId();
+    this.id = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16);;
     this.bookingStatus = BookingStatus.PENDING;
     this.createdDate = ZonedDateTime.now();
     this.updatedDate = ZonedDateTime.now();

@@ -6,6 +6,7 @@ import com.bookingcare.application.dto.event.EventEnvelope;
 import com.bookingcare.application.ports.input.IScheduleApplicationServicePatient;
 import com.bookingcare.infrastructure.messaging.event.HoldSlotFailedEvent;
 import com.bookingcare.infrastructure.messaging.event.HoldSlotSucceededEvent;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,32 +33,47 @@ public class BookingEventListener {
     @Transactional
     public void handleBookingEvents(String jsonMessage) {
         try {
-            EventEnvelope<?> envelope = objectMapper.readValue(jsonMessage, EventEnvelope.class);
-            
-            log.info("Schedule received event: type={}, aggregateId={}", 
-                    envelope.getEventType(), envelope.getAggregateId());
+            log.info("Received raw message: {}", jsonMessage);
 
-            if ("BookingCreatedEvent".equals(envelope.getEventType())) {
-                handleBookingCreated(envelope);
+            // Handle potential double-serialization
+            JsonNode rootNode = objectMapper.readTree(jsonMessage);
+            if (rootNode.isTextual()) {
+                rootNode = objectMapper.readTree(rootNode.asText());
+            }
+
+            // Convert to EventEnvelope
+            EventEnvelope<?> envelope = objectMapper.treeToValue(rootNode, EventEnvelope.class);
+
+            String eventType = envelope.getEventType();
+            String aggregateId = envelope.getAggregateId();
+            String correlationId = envelope.getCorrelationId();
+            Object payload = envelope.getPayload();
+
+            log.info("Schedule received event: type={}, aggregateId={}", eventType, aggregateId);
+
+            if ("BookingCreatedEvent".equals(eventType) && payload != null) {
+                // Convert payload to JsonNode for easier handling
+                var payloadNode = objectMapper.valueToTree(payload);
+                handleBookingCreated(correlationId, payloadNode);
+            } else {
+                log.warn("Unknown event type or missing payload: {}", eventType);
             }
         } catch (Exception e) {
             log.error("Error handling booking event", e);
         }
     }
 
-    private void handleBookingCreated(EventEnvelope<?> envelope) {
+    private void handleBookingCreated(String correlationId, com.fasterxml.jackson.databind.JsonNode payloadNode) {
         try {
-            BookingCreatedEvent event = objectMapper.convertValue(
-                    envelope.getPayload(), BookingCreatedEvent.class);
+            BookingCreatedEvent event = objectMapper.convertValue(payloadNode, BookingCreatedEvent.class);
 
-            log.info("Attempting to hold slot: bookingId={}, packageScheduleId={}", 
+            log.info("Attempting to hold slot: bookingId={}, packageScheduleId={}",
                     event.getBookingId(), event.getPackageScheduleId());
 
             // Call domain service to hold slot - returns holdId (String)
             String holdId = scheduleService.holdScheduleForBooking(
                     event.getPackageScheduleId(),
-                    event.getBookingId()
-            );
+                    event.getBookingId());
 
             // Publish HoldSlotSucceededEvent
             HoldSlotSucceededEvent successEvent = HoldSlotSucceededEvent.builder()
@@ -67,23 +83,25 @@ public class BookingEventListener {
                     .packageScheduleId(event.getPackageScheduleId())
                     .build();
 
-            publishScheduleEvent("HoldSlotSucceededEvent", event.getBookingId(), 
-                    envelope.getCorrelationId(), successEvent);
+            publishScheduleEvent("HoldSlotSucceededEvent", event.getBookingId(),
+                    correlationId, successEvent);
 
-            log.info("Slot hold succeeded: bookingId={}, holdId={}", 
+            log.info("Slot hold succeeded: bookingId={}, holdId={}",
                     event.getBookingId(), holdId);
 
         } catch (Exception e) {
-            log.error("Failed to hold slot for booking: {}", envelope.getAggregateId(), e);
-            
+            // Extract bookingId from payload for error handling
+            String bookingId = payloadNode.has("bookingId") ? payloadNode.get("bookingId").asText() : "unknown";
+
+            log.error("Failed to hold slot for booking: {}", bookingId, e);
+
             // Publish HoldSlotFailedEvent
             HoldSlotFailedEvent failedEvent = HoldSlotFailedEvent.builder()
-                    .bookingId(envelope.getAggregateId())
+                    .bookingId(bookingId)
                     .reason(e.getMessage())
                     .build();
 
-            publishScheduleEvent("HoldSlotFailedEvent", envelope.getAggregateId(), 
-                    envelope.getCorrelationId(), failedEvent);
+            publishScheduleEvent("HoldSlotFailedEvent", bookingId, correlationId, failedEvent);
         }
     }
 
@@ -94,54 +112,69 @@ public class BookingEventListener {
     @Transactional
     public void handleScheduleCommands(String jsonMessage) {
         try {
-            EventEnvelope<?> envelope = objectMapper.readValue(jsonMessage, EventEnvelope.class);
-            
-            log.info("Schedule received command: type={}, aggregateId={}", 
-                    envelope.getEventType(), envelope.getAggregateId());
+            log.info("Received schedule command: {}", jsonMessage);
 
-            if ("BookingConfirmedEvent".equals(envelope.getEventType())) {
-                handleBookingConfirmed(envelope);
+            // Handle potential double-serialization
+            JsonNode rootNode = objectMapper.readTree(jsonMessage);
+            if (rootNode.isTextual()) {
+                rootNode = objectMapper.readTree(rootNode.asText());
+            }
+
+            // Convert to EventEnvelope
+            EventEnvelope<?> envelope = objectMapper.treeToValue(rootNode, EventEnvelope.class);
+
+            String eventType = envelope.getEventType();
+            String aggregateId = envelope.getAggregateId();
+            Object payload = envelope.getPayload();
+
+            log.info("Schedule received command: type={}, aggregateId={}", eventType, aggregateId);
+
+            if ("BookingConfirmedEvent".equals(eventType) && payload != null) {
+                // Convert payload to JsonNode for easier handling
+                var payloadNode = objectMapper.valueToTree(payload);
+                handleBookingConfirmed(payloadNode);
+            } else {
+                log.warn("Unknown command type or missing payload: {}", eventType);
             }
         } catch (Exception e) {
             log.error("Error handling schedule command", e);
         }
     }
 
-    private void handleBookingConfirmed(EventEnvelope<?> envelope) {
+    private void handleBookingConfirmed(com.fasterxml.jackson.databind.JsonNode payloadNode) {
         try {
-            BookingConfirmedEvent event = objectMapper.convertValue(
-                    envelope.getPayload(), BookingConfirmedEvent.class);
+            BookingConfirmedEvent event = objectMapper.convertValue(payloadNode, BookingConfirmedEvent.class);
 
             log.info("Confirming hold: scheduleHoldId={}", event.getScheduleHoldId());
 
             // Confirm hold → status BOOKED
             scheduleService.confirmHoldScheduleForBooking(
                     event.getScheduleHoldId(),
-                    event.getBookingId()
-            );
+                    event.getBookingId());
 
-            log.info("Hold confirmed to BOOKED: holdId={}, bookingId={}", 
+            log.info("Hold confirmed to BOOKED: holdId={}, bookingId={}",
                     event.getScheduleHoldId(), event.getBookingId());
 
         } catch (Exception e) {
-            log.error("Failed to confirm hold: {}", envelope.getAggregateId(), e);
+            // Extract bookingId from payload for error handling
+            String bookingId = payloadNode.has("bookingId") ? payloadNode.get("bookingId").asText() : "unknown";
+            log.error("Failed to confirm hold for booking: {}", bookingId, e);
         }
     }
 
-    private void publishScheduleEvent(String eventType, String aggregateId, 
-                                       String correlationId, Object payload) {
+    private void publishScheduleEvent(String eventType, String aggregateId,
+            String correlationId, Object payload) {
         try {
             EventEnvelope<Object> envelope = EventEnvelope.of(
                     eventType,
                     aggregateId,
                     correlationId,
                     "schedule-service",
-                    payload
-            );
+                    payload);
 
             String json = objectMapper.writeValueAsString(envelope);
             kafkaTemplate.send("schedule-events", aggregateId, json);
-            
+
             log.info("Published {}: aggregateId={}", eventType, aggregateId);
         } catch (Exception e) {
             log.error("Failed to publish schedule event", e);

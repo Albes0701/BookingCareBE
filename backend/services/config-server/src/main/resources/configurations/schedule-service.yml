@@ -32,15 +32,15 @@ spring:
     bootstrap-servers: kafka:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         # KHÔNG gửi thông tin class java trong header message
-        spring.json.add.type.headers: false 
+        spring.json.add.type.headers: false
     consumer:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer 
-      # Lưu ý: Dùng StringDeserializer ở consumer để nhận chuỗi JSON thô, 
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Lưu ý: Dùng StringDeserializer ở consumer để nhận chuỗi JSON thô,
       # sau đó tự map bằng ObjectMapper trong code cho an toàn và dễ debug.
 
 eureka:
@@ -55,6 +55,3 @@ application:
     expertise-url: http://api-gateway:8222/api/v1/expertise
     package-service-url: http://api-gateway:8222/api/v1/packages-services
     clinic-service-url: http://api-gateway:8222/api/v1/clinics
-
-
-

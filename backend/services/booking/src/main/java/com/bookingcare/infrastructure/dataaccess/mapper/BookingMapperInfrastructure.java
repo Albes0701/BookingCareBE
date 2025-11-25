@@ -23,6 +23,8 @@ public class BookingMapperInfrastructure {
                 .id(entity.getId())
                 .name(entity.getName())
                 .isDeleted(entity.getIsDeleted())
+                .bookingPackageDetails(
+                        entity.getDetails() != null ? entity.getDetails().stream().map(this::toDomain).toList() : null)
                 .build();
     }
 
@@ -57,6 +59,13 @@ public class BookingMapperInfrastructure {
             return null;
         }
 
+        BookingPackageDetail bookingPackageDetail = null;
+        if (entity.getBookingPackage() != null && entity.getBookingPackage().getDetails() != null
+                && !entity.getBookingPackage().getDetails().isEmpty()) {
+            // Default to the first detail if available
+            bookingPackageDetail = toDomain(entity.getBookingPackage().getDetails().get(0));
+        }
+
         return HealthCheckPackageScheduleBookingDetail.builder()
                 .id(entity.getId())
                 .patientRelativesName(entity.getPatientRelativesName())
@@ -71,6 +80,7 @@ public class BookingMapperInfrastructure {
                 .createdDate(entity.getCreatedDate())
                 .updatedDate(entity.getUpdatedDate())
                 .bookingPackage(toDomain(entity.getBookingPackage()))
+                .bookingPackageDetail(bookingPackageDetail)
                 .build();
     }
 
@@ -84,7 +94,6 @@ public class BookingMapperInfrastructure {
                 .packageId(entity.getId().getPackageId())
                 .price(entity.getPrice())
                 .description(entity.getDescription())
-                .bookingPackage(toDomain(entity.getBookingPackage()))
                 .build();
     }
 }

@@ -385,6 +385,7 @@ services:
       - zookeeper
     ports:
       - "9092:9092" # Port này để Spring Boot kết nối vào
+      - "29092:29092" # Port này để các service trong Docker kết nối vào
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181

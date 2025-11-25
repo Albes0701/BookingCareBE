@@ -13,6 +13,8 @@ public record CreateBookingCommand(
 
     String patientRelativePhone,
 
+    String doctorId,
+
     @NotBlank(message = "Patient ID is mandatory")
     String patientId,
 

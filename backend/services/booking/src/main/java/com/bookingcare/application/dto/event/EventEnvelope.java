@@ -1,5 +1,6 @@
 package com.bookingcare.application.dto.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,17 +12,18 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class EventEnvelope<T> {
     private String eventId;
     private String eventType;
-    private String aggregateId;      // bookingId
-    private String correlationId;    // Trace toàn bộ saga
+    private String aggregateId; // bookingId
+    private String correlationId; // Trace toàn bộ saga
     private ZonedDateTime timestamp;
-    private String source;           // booking-service, schedule-service...
+    private String source; // booking-service, schedule-service...
     private T payload;
 
-    public static <T> EventEnvelope<T> of(String eventType, String aggregateId, 
-                                           String correlationId, String source, T payload) {
+    public static <T> EventEnvelope<T> of(String eventType, String aggregateId,
+            String correlationId, String source, T payload) {
         return EventEnvelope.<T>builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType(eventType)

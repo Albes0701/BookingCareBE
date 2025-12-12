@@ -13,10 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bookingcare.application.dto.ApiResponse;
 import com.bookingcare.application.dto.CreateBookingCommand;
 import com.bookingcare.application.dto.CreateBookingResponse;
+import com.bookingcare.application.dto.HealthCheckBookHistoryResponse;
 import com.bookingcare.application.dto.QueryBookingOrderDetailInfoResponse;
+import com.bookingcare.application.dto.QueryBookingPackageDetailInfo;
 import com.bookingcare.application.dto.QueryOrdersResponse;
 import com.bookingcare.application.dto.UpdateBookingOrderStatusCommand;
 import com.bookingcare.application.ports.input.IBookingApplicationService;
+import com.bookingcare.infrastructure.external.package_service.HealthCheckPackageResponse;
+import com.bookingcare.infrastructure.external.package_service.HealthPackageFeignClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +32,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequestMapping(value = "/api/v1/booking")
 @Slf4j
 public class BookingController {
+    
     private final IBookingApplicationService _bookingApplicationService;
+    private final HealthPackageFeignClient _healthPackageFeignClient;  // Thêm dòng này
+
+
 
     @GetMapping(value = "test")
     public ResponseEntity<Object> test() {
@@ -105,6 +113,65 @@ public class BookingController {
         
         return new ApiResponse<>(httpStatus, message, result);
     }
+
+    @GetMapping("/booking-package-details")
+    public ApiResponse<List<QueryBookingPackageDetailInfo>> getAllBookingPackageDetails() {
+        log.info("Fetching all booking package details");
+
+        List<QueryBookingPackageDetailInfo> bookingDetails = _bookingApplicationService.getAllBookingPackageDetails();
+        String message = bookingDetails.isEmpty() ? "No booking package details found" : "Booking package details fetched successfully";
+        return new ApiResponse<>(200, message, bookingDetails);
+    }
+
+
+    @GetMapping("/test-feign/{packageId}")
+    public ApiResponse<HealthCheckPackageResponse> testFeignClient(@PathVariable String packageId) {
+        log.info("Testing FeignClient connection with packageId: {}", packageId);
+        
+        try {
+            // Validate packageId format
+            java.util.UUID packageUUID = java.util.UUID.fromString(packageId);
+            log.info("Converted packageId to UUID: {}", packageUUID);
+            
+            // Call FeignClient
+            log.info("Calling FeignClient.getPackageDetail()...");
+            ResponseEntity<HealthCheckPackageResponse> responseEntity = _healthPackageFeignClient
+                    .getPackageDetail(packageUUID);
+            
+            log.info("FeignClient response status: {}", responseEntity.getStatusCode());
+            
+            
+            HealthCheckPackageResponse packageResponse = responseEntity.getBody();
+            
+            if (packageResponse == null) {
+                log.warn("FeignClient response body is null");
+                return new ApiResponse<>(404, "Package not found", null);
+            }
+            
+            log.info("Successfully fetched package: {}", packageResponse.name());
+            return new ApiResponse<>(200, "Package fetched successfully from package-service", packageResponse);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid UUID format for packageId: {}", packageId);
+            return new ApiResponse<>(400, "Invalid package ID format", null);
+        } catch (Exception e) {
+            log.error("Error calling FeignClient: {}", e.getMessage(), e);
+            return new ApiResponse<>(500, "Error calling package-service: " + e.getMessage(), null);
+        }
+    }
+
+
+    @GetMapping("/book-history/{id}")
+    public ApiResponse<List<HealthCheckBookHistoryResponse>> getBookingHistoryByPatientId(@PathVariable String id) {
+        log.info("Fetching booking history for patient id: {}", id);
+
+        List<HealthCheckBookHistoryResponse> bookings = _bookingApplicationService.getBookingHistoryByPatientId(id);
+        String message = bookings.isEmpty() ? "No booking history found for the patient" : "Booking history fetched successfully";
+        return new ApiResponse<>(200, message, bookings);
+    }
+
+    
+
 
 
 

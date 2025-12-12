@@ -1,3 +1,4 @@
 # IDE configs
 .idea/
 .vscode/
+.logs/

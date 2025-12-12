@@ -31,3 +31,4 @@ eureka:
 application:
   config:
     expertise-url: http://localhost:8222/api/v1/expertise
+    

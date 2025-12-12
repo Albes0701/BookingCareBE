@@ -74,8 +74,8 @@ public class PackageServiceController {
      * Returns details for a single health check package including its specific medical services.
      */
     @GetMapping("/packages/{id}")
-    public ResponseEntity<HealthCheckPackageDetailResponse> getPackageDetail(@PathVariable UUID id) {
-        return ResponseEntity.ok(packageMedicalService.getPackageDetail(id));
+    public ResponseEntity<HealthCheckPackageResponse> getPackageById(@PathVariable UUID id) {
+        return ResponseEntity.ok(packageMedicalService.getPackageById(id));
     }
 
       /**

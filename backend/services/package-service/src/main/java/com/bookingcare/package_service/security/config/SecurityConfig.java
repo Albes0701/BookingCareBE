@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/packages-services/doctor/**").hasRole("DOCTOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/packages-services/doctor/services/mine").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/packages-services").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/packages-services/packages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/packages-services/*").permitAll()
                         .anyRequest().authenticated()
                 );

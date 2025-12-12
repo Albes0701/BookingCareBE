@@ -1,10 +1,14 @@
 package com.bookingcare.application.mapper;
 
+import java.math.BigDecimal;
+
 import org.springframework.stereotype.Component;
 
 import com.bookingcare.application.dto.CreateBookingCommand;
 import com.bookingcare.application.dto.CreateBookingResponse;
+import com.bookingcare.application.dto.HealthCheckBookHistoryResponse;
 import com.bookingcare.application.dto.QueryBookingOrderDetailInfoResponse;
+import com.bookingcare.application.dto.QueryBookingPackageDetailInfo;
 import com.bookingcare.application.dto.QueryOrdersResponse;
 import com.bookingcare.application.dto.QueryPackageScheduleResponse;
 import com.bookingcare.application.dto.QueryScheduleResponse;
@@ -14,6 +18,7 @@ import com.bookingcare.domain.entity.HealthCheckPackageScheduleBookingDetail;
 import com.bookingcare.domain.entity.Schedule;
 import com.bookingcare.domain.valueobject.DayId;
 import com.bookingcare.domain.valueobject.PurchaseMethod;
+import com.bookingcare.infrastructure.external.package_service.HealthCheckPackageResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -129,4 +134,36 @@ public class BookingMapperApplication {
                 booking.getUpdatedDate()
         );
     }
+
+    public QueryBookingPackageDetailInfo toQueryBookingPackageDetailInfo(
+        BookingPackageDetail packageDetail,
+        HealthCheckPackageResponse healthCheckPackage) {
+    
+        return new QueryBookingPackageDetailInfo(
+                healthCheckPackage.id().toString(),
+                packageDetail.getBookingPackageId(),                                 // bookingPackageId
+                packageDetail.getBookingPackage(),                     // bookingPackage
+                packageDetail.getPrice(),   
+                packageDetail.getDescription(),                           // price
+                healthCheckPackage.name(),                             // packageName
+                healthCheckPackage.shortPackageInfo()                  // shortPackageInfo
+        );
+    }
+
+    public HealthCheckBookHistoryResponse toHealthCheckBookHistoryResponse(HealthCheckPackageScheduleBookingDetail booking,BookingPackageDetail packageDetail) {
+        return new HealthCheckBookHistoryResponse(
+            booking.getPackageScheduleId(),
+            booking.getBookingPackageId(),
+            booking.getBookingReason(),
+            booking.getBookingStatus(),
+            packageDetail.getPrice()
+        );
+    }
+
+
+
+
+
+
+
 }

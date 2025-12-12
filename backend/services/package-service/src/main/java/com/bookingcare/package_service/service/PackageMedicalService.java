@@ -140,4 +140,12 @@ public class PackageMedicalService {
         return packageServiceMapper.toHealthCheckPackageResponse(healthCheckPackage);
         
     }
+
+    public HealthCheckPackageResponse getPackageById(UUID id) {
+        HealthCheckPackage healthCheckPackage = healthCheckPackageRepository
+                .findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.PACKAGE_NOT_FOUND));
+
+        return packageServiceMapper.toHealthCheckPackageResponse(healthCheckPackage);
+    }
 }

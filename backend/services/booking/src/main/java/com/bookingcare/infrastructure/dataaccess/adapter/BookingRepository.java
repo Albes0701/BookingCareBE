@@ -1,5 +1,6 @@
 package com.bookingcare.infrastructure.dataaccess.adapter;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
@@ -33,6 +34,22 @@ public class BookingRepository implements IBookingRepository {
         BookingPackageDetailId id = new BookingPackageDetailId(bookingPackageId, healthCheckPackageId);
         return _bookingPackageDetailJpaRepository
                 .findById(id)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<BookingPackageDetail> findAllBookingPackageDetails() {
+        return _bookingPackageDetailJpaRepository.findAll()
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    // ✅ Thêm method này
+    @Override
+    public Optional<BookingPackageDetail> findByBookingPackageId(String bookingPackageId) {
+        return _bookingPackageDetailJpaRepository
+                .findByBookingPackageId(bookingPackageId)
                 .map(mapper::toDomain);
     }
 }

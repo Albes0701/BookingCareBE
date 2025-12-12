@@ -36,7 +36,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             // CORS configuration for microservice communication
-            .cors(corsCustomizer -> corsCustomizer.configurationSource(corsConfigurationSource()))
+            // .cors(corsCustomizer -> corsCustomizer.configurationSource(corsConfigurationSource()))
 
             // Disable CSRF for stateless REST API
             .csrf(AbstractHttpConfigurer::disable)

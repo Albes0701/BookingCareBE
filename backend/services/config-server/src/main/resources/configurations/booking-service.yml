@@ -62,3 +62,4 @@ eureka:
 application:
   config:
     schedule-url: http://api-gateway:8222/api/v1/schedule
+    package-url: http://package-service:8075/api/v1/packages-services

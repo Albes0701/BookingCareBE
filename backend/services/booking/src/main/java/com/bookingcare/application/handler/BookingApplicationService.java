@@ -4,10 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.bookingcare.application.dto.CreateBookingCommand;
+import com.bookingcare.application.dto.HealthCheckBookHistoryResponse;
 import com.bookingcare.application.dto.QueryBookingOrderDetailInfoResponse;
+import com.bookingcare.application.dto.QueryBookingPackageDetailInfo;
 import com.bookingcare.application.dto.QueryOrdersResponse;
 import com.bookingcare.application.dto.QueryPackageScheduleResponse;
 import com.bookingcare.application.dto.event.BookingCreatedEvent;
@@ -20,6 +23,8 @@ import com.bookingcare.application.saga.BookingEventPublisher;
 import com.bookingcare.domain.entity.BookingPackageDetail;
 import com.bookingcare.domain.entity.HealthCheckPackageScheduleBookingDetail;
 import com.bookingcare.domain.valueobject.BookingStatus;
+import com.bookingcare.infrastructure.external.package_service.HealthCheckPackageResponse;
+import com.bookingcare.infrastructure.external.package_service.HealthPackageFeignClient;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +39,7 @@ public class BookingApplicationService implements IBookingApplicationService {
     private final IHealthCheckPackageScheduleBookingDetailRepository _healthCheckPackageScheduleBookingDetailRepository;
     private final IScheduleFeignClientService _scheduleFeignClientService;
     private final BookingEventPublisher eventPublisher;
+    private final HealthPackageFeignClient healthPackageFeignClient;
 
 
 
@@ -221,6 +227,124 @@ public class BookingApplicationService implements IBookingApplicationService {
             );
         }
     }
+
+
+    @Override
+    public List<QueryBookingPackageDetailInfo> getAllBookingPackageDetails() {
+        try {
+            // 1. Get all booking package details from local repository
+            List<BookingPackageDetail> packageDetails = _bookingRepository.findAllBookingPackageDetails();
+            
+            log.info("Found {} booking package details", packageDetails.size());
+            
+            // 2. Map and enrich with health check package info via OpenFeign
+            List<QueryBookingPackageDetailInfo> response = packageDetails.stream()
+                    .map(packageDetail -> {
+                        try {
+                            // Get the package ID from booking package detail
+                            String packageId = packageDetail.getPackageId();
+                            
+                            if (packageId == null || packageId.isEmpty()) {
+                                log.warn("Package ID is null or empty for booking package id: {}", 
+                                        packageDetail.getBookingPackageId());
+                                return null;
+                            }
+                            
+                            // Call package-service via OpenFeign to get health check package details
+                            ResponseEntity<HealthCheckPackageResponse> responseEntity = healthPackageFeignClient
+                                    .getPackageDetail(java.util.UUID.fromString(packageId));
+                            
+                            if (!responseEntity.getStatusCode().is2xxSuccessful() || responseEntity.getBody() == null) {
+                                log.warn("Failed to fetch health check package from package-service for package id: {}", 
+                                        packageId);
+                                return null;
+                            }
+                            
+                            HealthCheckPackageResponse healthCheckPackage = responseEntity.getBody();
+                            
+                            // Map to QueryBookingPackageDetailInfo DTO
+                            return bookingMapper.toQueryBookingPackageDetailInfo(
+                                    packageDetail, 
+                                    healthCheckPackage
+                            );
+                        } catch (Exception e) {
+                            log.warn("Error processing booking package id {}: {}", 
+                                    packageDetail.getBookingPackageId(), e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(detail -> detail != null)
+                    .toList();
+            
+            log.info("Successfully enriched {} booking package details with health check package info", 
+                    response.size());
+            return response;
+        } catch (Exception e) {
+            log.error("Error fetching booking package details: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch booking package details", e);
+        }
+    }
+
+
+    @Override
+    public List<HealthCheckBookHistoryResponse> getBookingHistoryByPatientId(String id) {
+        try {
+            log.info("Fetching booking history for patient id: {}", id);
+            
+            List<HealthCheckPackageScheduleBookingDetail> bookings = _healthCheckPackageScheduleBookingDetailRepository
+                    .findByPatientId(id);
+            
+            if (bookings.isEmpty()) {
+                log.info("No booking history found for patient id: {}", id);
+                return List.of();
+            }
+            
+            log.info("Found {} bookings for patient id: {}", bookings.size(), id);
+            
+            List<HealthCheckBookHistoryResponse> response = bookings.stream()
+                    .map(booking -> {
+                        try {
+                            log.info("Processing booking - bookingPackageId: {}", booking.getBookingPackageId());
+                            
+                            // Find BookingPackageDetail using bookingPackageId
+                            Optional<BookingPackageDetail> packageDetailOptional = _bookingRepository
+                                    .findByBookingPackageId(booking.getBookingPackageId());
+                            
+                            if (packageDetailOptional.isEmpty()) {
+                                log.warn("BookingPackageDetail not found for bookingPackageId: {}", 
+                                        booking.getBookingPackageId());
+                                return null;
+                            }
+                            
+                            BookingPackageDetail packageDetail = packageDetailOptional.get();
+                            log.info("Found BookingPackageDetail - packageId: {}, price: {}", 
+                                    packageDetail.getPackageId(), packageDetail.getPrice());
+                            
+                            // Map booking and packageDetail to HistoryResponse
+                            return bookingMapper.toHealthCheckBookHistoryResponse(booking, packageDetail);
+                            
+                        } catch (Exception e) {
+                            log.warn("Error processing booking history for bookingPackageId {}: {}", 
+                                    booking.getBookingPackageId(), e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(response_item -> response_item != null)
+                    .toList();
+            
+            log.info("Successfully processed {} booking history records", response.size());
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Error fetching booking history for patient id {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch booking history", e);
+        }
+    }
+
+
+
+
+    
 
 
 
